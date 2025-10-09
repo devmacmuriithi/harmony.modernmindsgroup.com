@@ -31,6 +31,7 @@ export default function PrayerWindow() {
               <input 
                 type="checkbox" 
                 checked={prayer.answered} 
+                onChange={() => {}}
                 className="mt-1"
                 data-testid={`checkbox-prayer-${prayer.id}`}
               />

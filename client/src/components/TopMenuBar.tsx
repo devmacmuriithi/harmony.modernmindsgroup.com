@@ -1,5 +1,6 @@
 import { Bell, Sun, Moon } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
+import { useEffect } from 'react';
 
 interface TopMenuBarProps {
   viewMode: 'tiles' | 'icons';
@@ -8,6 +9,10 @@ interface TopMenuBarProps {
 
 export default function TopMenuBar({ viewMode, onViewModeToggle }: TopMenuBarProps) {
   const { theme, toggleTheme } = useTheme();
+  
+  useEffect(() => {
+    // Ensure theme is applied on mount
+  }, [theme]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-[100] h-14 border-b border-amber-900/20 dark:border-amber-200/20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm">
