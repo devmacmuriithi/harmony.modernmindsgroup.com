@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
-import { Loader2, RefreshCw, ExternalLink } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, RefreshCw, ExternalLink, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Video {
@@ -15,6 +17,7 @@ interface Video {
 
 export default function VideosWindow() {
   const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: videosData, isLoading, error } = useQuery<{ data: Video[] }>({
     queryKey: ['/api/videos']
@@ -64,6 +67,13 @@ export default function VideosWindow() {
 
   const videos = videosData?.data || [];
 
+  // Filter videos by search query (title or description)
+  const filteredVideos = videos.filter(video => 
+    !searchQuery || 
+    video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (video.description ?? '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="space-y-4 h-full flex flex-col">
       <div className="flex items-center justify-between">
@@ -84,6 +94,18 @@ export default function VideosWindow() {
         </Button>
       </div>
 
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search videos..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+          data-testid="input-search-videos"
+        />
+      </div>
+
       <div className="flex-1 overflow-auto space-y-3">
         {videos.length === 0 ? (
           <div className="text-center py-8">
@@ -92,8 +114,12 @@ export default function VideosWindow() {
               Get Personalized Videos
             </Button>
           </div>
+        ) : filteredVideos.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">No videos match your search</p>
+          </div>
         ) : (
-          videos.map(video => (
+          filteredVideos.map(video => (
             <div
               key={video.id}
               className="p-4 rounded-lg border border-border bg-card hover-elevate"
