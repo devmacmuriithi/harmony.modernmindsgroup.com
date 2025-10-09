@@ -59,6 +59,12 @@ export default function Desktop() {
 
   const handleCloseWindow = (appId: string) => {
     setOpenWindows(openWindows.filter(id => id !== appId));
+    
+    // Remove non-default apps from dock when closed
+    const defaultDockApps = ['bible', 'prayer', 'notes', 'calendar'];
+    if (!defaultDockApps.includes(appId)) {
+      setLaunchedApps(launchedApps.filter(id => id !== appId));
+    }
   };
 
   return (
