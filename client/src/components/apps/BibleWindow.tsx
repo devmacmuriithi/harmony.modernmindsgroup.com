@@ -115,9 +115,6 @@ export default function BibleWindow() {
             This verse was personalized based on your spiritual journey, moods, and prayer patterns.
           </p>
         </div>
-        <div className="text-sm text-muted-foreground italic">
-          <p>The backend has generated your personalized verse reference. In a production app, this would fetch the actual Bible text from an API like ESV or YouVersion.</p>
-        </div>
         {latestVerse.notes && (
           <div className="mt-4 p-3 bg-muted rounded-lg">
             <p className="text-sm"><strong>Previous reflection:</strong> {latestVerse.notes}</p>

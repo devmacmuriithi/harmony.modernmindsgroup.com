@@ -167,7 +167,7 @@ Preferred communication style: Simple, everyday language.
 6. **Video Recommendations Engine**: Suggests faith-based content
 7. **Resource Recommendations Engine**: Personalized spiritual growth resources
 
-**Backend-Connected Applications**: ✅ 5 apps fully integrated and tested
+**Backend-Connected Applications**: ✅ 11 apps fully integrated and tested
 1. **Flourishing Index** (`/api/flourishing`)
    - Displays AI-generated spiritual wellness scores
    - Refresh button to regenerate personalized insights
@@ -196,6 +196,45 @@ Preferred communication style: Simple, everyday language.
    - Personalized content based on user's spiritual journey
    - Scripture references included
    - Refresh button for new devotional content
+
+6. **Spiritual Guides** (`/api/guides`, `/api/conversations`)
+   - AI chat companions with conversation history
+   - Conversation count displayed on guide cards
+   - History sidebar to access past conversations
+   - Real-time AI responses from OpenAI
+   - Multiple guides with different spiritual perspectives
+
+7. **Notes (SyncNote)** (`/api/notes`)
+   - Full CRUD operations for personal notes
+   - AI-powered automatic tagging
+   - Edit and delete functionality
+
+8. **Videos** (`/api/videos`)
+   - AI-generated faith-based video recommendations
+   - YouTube integration with watch tracking
+   - Personalized content suggestions
+
+9. **Songs** (`/api/songs`)
+   - Worship music recommendations
+   - YouTube music integration
+   - Listen tracking functionality
+
+10. **Sermons** (`/api/sermons`)
+    - AI-powered sermon recommendations
+    - Preacher and date information
+    - Notes capability for sermon reflections
+
+11. **Library** (`/api/resources`)
+    - Books, podcasts, and articles management
+    - AI-based personalized recommendations
+    - Resource type categorization (book/podcast/article)
+
+**TileView Live Data**: ✅ Complete
+- All desktop tiles display real-time backend data
+- Flourishing Index shows actual spiritual/emotional/relational scores
+- Prayer count reflects active prayer requests
+- Latest Bible verses, devotionals, and notes displayed
+- Empty states guide users to generate AI content
 
 **Testing & Validation**: ✅ Complete
 - End-to-end tests passing for all 5 backend-connected apps

@@ -2,8 +2,15 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
-import { Send, Loader2, ArrowLeft } from 'lucide-react';
+import { Send, Loader2, ArrowLeft, History, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 interface Guide {
   id: string;
@@ -35,9 +42,15 @@ export default function GuidesWindow() {
   const [selectedGuide, setSelectedGuide] = useState<Guide | null>(null);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [messageInput, setMessageInput] = useState('');
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const { data: guidesData, isLoading: guidesLoading, error: guidesError } = useQuery<{ data: Guide[] }>({
     queryKey: ['/api/guides']
+  });
+
+  const { data: conversationsData } = useQuery<{ data: Conversation[] }>({
+    queryKey: ['/api/conversations'],
+    enabled: !!selectedGuide
   });
 
   if (guidesError) {
@@ -93,6 +106,11 @@ export default function GuidesWindow() {
     createConversationMutation.mutate({ guideId: guide.id, guideName: guide.name });
   };
 
+  const handleSelectConversation = (conversation: Conversation) => {
+    setActiveConversation(conversation);
+    setIsHistoryOpen(false);
+  };
+
   const handleSendMessage = () => {
     if (messageInput.trim() && activeConversation) {
       sendMessageMutation.mutate(messageInput);
@@ -113,6 +131,12 @@ export default function GuidesWindow() {
   }
 
   const guides = guidesData?.data || [];
+  const conversations = conversationsData?.data || [];
+
+  // Get conversation counts per guide
+  const getConversationCount = (guideId: string) => {
+    return conversations.filter(c => c.guideId === guideId).length;
+  };
 
   // Guide selection view
   if (!selectedGuide) {
@@ -121,23 +145,37 @@ export default function GuidesWindow() {
         <h2 className="text-xl font-semibold text-foreground">Spiritual Guides</h2>
         <p className="text-sm text-muted-foreground">Choose a guide to start a conversation</p>
         <div className="grid grid-cols-2 gap-3">
-          {guides.map(guide => (
-            <button
-              key={guide.id}
-              onClick={() => handleGuideSelect(guide)}
-              data-testid={`button-guide-${guide.id}`}
-              className="p-3 rounded-lg border border-border bg-card hover-elevate active-elevate-2 text-left"
-            >
-              <div className="text-2xl mb-1">{guide.emoji}</div>
-              <div className="text-sm font-medium text-foreground">{guide.name}</div>
-              <div className="text-xs text-muted-foreground mt-1">{guide.description}</div>
-            </button>
-          ))}
+          {guides.map(guide => {
+            const count = getConversationCount(guide.id);
+            return (
+              <button
+                key={guide.id}
+                onClick={() => handleGuideSelect(guide)}
+                data-testid={`button-guide-${guide.id}`}
+                className="p-3 rounded-lg border border-border bg-card hover-elevate active-elevate-2 text-left"
+              >
+                <div className="text-2xl mb-1">{guide.emoji}</div>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-sm font-medium text-foreground">{guide.name}</div>
+                  {count > 0 && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <MessageSquare className="w-3 h-3" />
+                      <span>{count}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">{guide.description}</div>
+              </button>
+            );
+          })}
         </div>
       </div>
     );
   }
 
+  // Get conversations for current guide
+  const guideConversations = conversations.filter(c => c.guideId === selectedGuide.id);
+  
   // Chat view
   const messages = messagesData?.data || [];
 
@@ -151,6 +189,39 @@ export default function GuidesWindow() {
           <h2 className="text-lg font-semibold text-foreground">{selectedGuide.emoji} {selectedGuide.name}</h2>
           <p className="text-xs text-muted-foreground">{selectedGuide.description}</p>
         </div>
+        <Sheet open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+          <SheetTrigger asChild>
+            <Button size="icon" variant="ghost" data-testid="button-conversation-history">
+              <History className="h-4 w-4" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent>
+            <SheetHeader>
+              <SheetTitle>Conversation History</SheetTitle>
+            </SheetHeader>
+            <div className="mt-4 space-y-2">
+              {guideConversations.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No conversations yet</p>
+              ) : (
+                guideConversations.map(conv => (
+                  <button
+                    key={conv.id}
+                    onClick={() => handleSelectConversation(conv)}
+                    className={`w-full p-3 rounded-lg border border-border text-left hover-elevate ${
+                      activeConversation?.id === conv.id ? 'bg-primary/10 border-primary' : 'bg-card'
+                    }`}
+                    data-testid={`history-conversation-${conv.id}`}
+                  >
+                    <div className="text-sm font-medium text-foreground line-clamp-1">{conv.title}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {new Date(conv.createdAt).toLocaleDateString()}
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
 
       <div className="flex-1 flex flex-col min-h-0">
