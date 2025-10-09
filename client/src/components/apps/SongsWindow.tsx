@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
-import { Play, Loader2, RefreshCw, ExternalLink } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Play, Loader2, RefreshCw, ExternalLink, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Song {
@@ -15,6 +17,7 @@ interface Song {
 
 export default function SongsWindow() {
   const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: songsData, isLoading, error } = useQuery<{ data: Song[] }>({
     queryKey: ['/api/songs']
@@ -64,6 +67,13 @@ export default function SongsWindow() {
 
   const songs = songsData?.data || [];
 
+  // Filter songs by search query (title or artist)
+  const filteredSongs = songs.filter(song => 
+    !searchQuery || 
+    song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    song.artist.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="space-y-4 h-full flex flex-col">
       <div className="flex items-center justify-between">
@@ -84,6 +94,18 @@ export default function SongsWindow() {
         </Button>
       </div>
 
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search songs or artists..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+          data-testid="input-search-songs"
+        />
+      </div>
+
       <div className="flex-1 overflow-auto space-y-2">
         {songs.length === 0 ? (
           <div className="text-center py-8">
@@ -92,8 +114,12 @@ export default function SongsWindow() {
               Get Worship Songs
             </Button>
           </div>
+        ) : filteredSongs.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">No songs match your search</p>
+          </div>
         ) : (
-          songs.map(song => (
+          filteredSongs.map(song => (
             <div
               key={song.id}
               className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover-elevate"
