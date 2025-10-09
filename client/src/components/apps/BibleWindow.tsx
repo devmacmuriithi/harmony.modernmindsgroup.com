@@ -39,13 +39,7 @@ export default function BibleWindow() {
   const generateMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest('POST', '/api/bible-verses/generate');
-      await res.json();
-      
-      // Immediately trigger flourishing recalculation
-      const flourishingRes = await apiRequest('POST', '/api/flourishing/generate');
-      await flourishingRes.json();
-      
-      return { success: true };
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bible-verses'] });
@@ -78,13 +72,7 @@ export default function BibleWindow() {
         reference: result.reference,
         text: result.text
       });
-      await res.json();
-      
-      // Immediately trigger flourishing recalculation
-      const flourishingRes = await apiRequest('POST', '/api/flourishing/generate');
-      await flourishingRes.json();
-      
-      return { success: true };
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bible-verses'] });

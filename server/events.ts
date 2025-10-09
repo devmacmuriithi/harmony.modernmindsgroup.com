@@ -45,7 +45,8 @@ async function autoCalculateFlourishing(userId: string) {
 export async function createEvent(
   userId: string,
   eventType: EventType,
-  eventData: Record<string, any>
+  eventData: Record<string, any>,
+  immediate: boolean = false
 ): Promise<void> {
   try {
     await db.insert(events).values({
@@ -55,7 +56,15 @@ export async function createEvent(
     });
 
     // Auto-trigger flourishing calculation after event
-    await autoCalculateFlourishing(userId);
+    if (immediate) {
+      // Immediate calculation for user-triggered actions (no debounce)
+      const { runFlourishingEngine } = await import('./personalization');
+      await runFlourishingEngine(userId);
+      console.log(`✨ Immediately calculated flourishing scores for user ${userId}`);
+    } else {
+      // Debounced calculation for background events
+      await autoCalculateFlourishing(userId);
+    }
   } catch (error) {
     console.error('Failed to create event:', error);
   }

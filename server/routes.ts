@@ -233,7 +233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         book: result.verse.book, 
         chapter: result.verse.chapter, 
         verses: `${result.verse.verseStart}-${result.verse.verseEnd}` 
-      });
+      }, true); // immediate = true for user-triggered actions
       res.json(result);
     } catch (error) {
       console.error('Bible verse generation error:', error);
@@ -328,12 +328,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         notes: null
       }).returning();
 
-      // Create event for verse saved
+      // Create event for verse saved (with immediate flourishing calculation)
       await createEvent(req.user!.id, 'bible_verse_saved', { 
         reference,
         book: result[0].book,
         chapter: result[0].chapter 
-      });
+      }, true); // immediate = true for user-triggered saves
 
       res.json({ success: true, data: result[0] });
     } catch (error) {
