@@ -241,6 +241,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/bible-verses/search', requireAuth, async (req, res) => {
+    try {
+      const query = req.query.query as string;
+      if (!query) {
+        return res.status(400).json({ success: false, error: { code: 'INVALID_QUERY', message: 'Query parameter required' } });
+      }
+
+      // Search using bible-api.com
+      const bibleResponse = await fetch(`https://bible-api.com/${encodeURIComponent(query)}?translation=kjv`);
+      
+      if (!bibleResponse.ok) {
+        return res.status(404).json({ success: false, error: { code: 'VERSE_NOT_FOUND', message: 'Verse not found' } });
+      }
+
+      const bibleData = await bibleResponse.json();
+      
+      // Parse the reference to extract book, chapter, verses
+      const reference = bibleData.reference || query;
+      const verseText = bibleData.text?.trim() || '';
+      
+      res.json({ 
+        success: true, 
+        data: {
+          reference,
+          text: verseText,
+          translation: 'KJV'
+        }
+      });
+    } catch (error) {
+      console.error('Bible verse search error:', error);
+      res.status(500).json({ success: false, error: { code: 'SEARCH_FAILED', message: 'Failed to search verse' } });
+    }
+  });
+
+  app.post('/api/bible-verses/save', requireAuth, async (req, res) => {
+    try {
+      const { reference, text, book, chapter, verseStart, verseEnd } = req.body;
+      
+      if (!reference || !text) {
+        return res.status(400).json({ success: false, error: { code: 'INVALID_DATA', message: 'Reference and text required' } });
+      }
+
+      // Parse Bible reference properly (handles multi-word books like "1 Corinthians")
+      // Reference format: "Book Chapter:Verse" or "Book Chapter:Verse-Verse"
+      let parsedBook = book;
+      let parsedChapter = chapter;
+      let parsedVerseStart = verseStart;
+      let parsedVerseEnd = verseEnd;
+
+      if (!parsedBook || !parsedChapter || !parsedVerseStart) {
+        // Split reference into book and verses
+        const colonIndex = reference.lastIndexOf(':');
+        if (colonIndex === -1) {
+          return res.status(400).json({ success: false, error: { code: 'INVALID_REFERENCE', message: 'Invalid verse reference format' } });
+        }
+
+        const bookAndChapter = reference.substring(0, colonIndex).trim();
+        const verses = reference.substring(colonIndex + 1).trim();
+
+        // Extract chapter (last number before colon)
+        const parts = bookAndChapter.split(' ');
+        parsedChapter = parseInt(parts[parts.length - 1]);
+        parsedBook = parts.slice(0, -1).join(' ');
+
+        // Extract verse start and end
+        if (verses.includes('-')) {
+          const [start, end] = verses.split('-');
+          parsedVerseStart = parseInt(start);
+          parsedVerseEnd = parseInt(end);
+        } else {
+          parsedVerseStart = parseInt(verses);
+          parsedVerseEnd = null;
+        }
+      }
+
+      // Save to bible_verses table
+      const result = await db.insert(bibleVerses).values({
+        userId: req.user!.id,
+        book: parsedBook,
+        chapter: parsedChapter,
+        verseStart: parsedVerseStart,
+        verseEnd: parsedVerseEnd,
+        translation: 'KJV',
+        content: text,
+        notes: null
+      }).returning();
+
+      // Create event for verse saved
+      await createEvent(req.user!.id, 'bible_verse_saved', { 
+        reference,
+        book: result[0].book,
+        chapter: result[0].chapter 
+      });
+
+      res.json({ success: true, data: result[0] });
+    } catch (error) {
+      console.error('Bible verse save error:', error);
+      res.status(500).json({ success: false, error: { code: 'SAVE_FAILED', message: 'Failed to save verse' } });
+    }
+  });
+
   // ============ DEVOTIONALS ============
   
   app.get('/api/devotionals', requireAuth, async (req, res) => {

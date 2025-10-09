@@ -5,6 +5,7 @@ export type EventType =
   | 'mood' 
   | 'prayer' 
   | 'bible_read' 
+  | 'bible_verse_saved'
   | 'devotional_read' 
   | 'note_created' 
   | 'guide_chat' 
