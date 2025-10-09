@@ -172,8 +172,10 @@ CRITICAL RULES:
 {
   "title": "Short, inspiring title",
   "content": "2-3 paragraph devotional reflection (max 300 words)",
-  "scripture_reference": "Hebrews 11:1"
+  "scripture_reference": "Book Chapter:Verse (choose a relevant scripture based on user's activities)"
 }
+
+3. IMPORTANT: Choose a scripture reference that matches the devotional theme and user's spiritual journey. Examples: "Romans 8:28", "Philippians 4:6-7", "Psalm 23:1", etc.
 
 User's recent activities:
 ${eventsSummary}
