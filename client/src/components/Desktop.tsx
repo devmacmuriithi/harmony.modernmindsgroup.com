@@ -6,6 +6,7 @@ import DesktopIcon from './DesktopIcon';
 import TileView from './TileView';
 import Window from './Window';
 import Launchpad from './Launchpad';
+import RightSidebar from './RightSidebar';
 
 import BibleWindow from './apps/BibleWindow';
 import DevotionalWindow from './apps/DevotionalWindow';
@@ -78,15 +79,23 @@ export default function Desktop() {
 
       <main className="relative h-screen w-screen pt-14 pb-24 overflow-hidden">
         {viewMode === 'icons' ? (
-          <div className="p-4 grid grid-flow-col auto-cols-max gap-x-4 gap-y-1 grid-rows-5">
-            {apps.map(app => (
-              <DesktopIcon
-                key={app.id}
-                icon={appComponents[app.id]?.icon || '📄'}
-                label={app.name}
-                onClick={() => handleAppClick(app.id)}
-              />
-            ))}
+          <div className="flex h-full">
+            {/* Left side: Desktop Icons */}
+            <div className="flex-1 p-4 grid grid-flow-col auto-cols-max gap-x-4 gap-y-1 grid-rows-5">
+              {apps.map(app => (
+                <DesktopIcon
+                  key={app.id}
+                  icon={appComponents[app.id]?.icon || '📄'}
+                  label={app.name}
+                  onClick={() => handleAppClick(app.id)}
+                />
+              ))}
+            </div>
+            
+            {/* Right side: Sidebar Widgets */}
+            <div className="border-l border-amber-200/30 dark:border-amber-800/30 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm">
+              <RightSidebar />
+            </div>
           </div>
         ) : (
           <TileView onAppClick={handleAppClick} />
