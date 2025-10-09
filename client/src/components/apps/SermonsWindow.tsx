@@ -60,7 +60,7 @@ export default function SermonsWindow() {
   const filteredSermons = sermons.filter(sermon => 
     !searchQuery || 
     sermon.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    sermon.preacher.toLowerCase().includes(searchQuery.toLowerCase())
+    (sermon.preacher ?? '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
