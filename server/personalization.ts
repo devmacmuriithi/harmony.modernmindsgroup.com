@@ -514,7 +514,8 @@ Scoring guidelines:
 AI Insight guidelines:
 - Make it personal and actionable
 - Reference specific scores that need attention
-- Suggest specific Harmony apps to use (Prayer Journal, Bible, Devotional, Spiritual Guides, Mood Tracker, etc.)
+- Suggest ONLY these valid Harmony apps: Prayer Journal, Bible, Devotional, Spiritual Guides, Mood Tracker, SyncNote (notes), Videos, Songs, Sermons, Library (resources), Faith Circles
+- NEVER suggest apps not in the list above
 - Keep it under 120 characters for tile display
 
 User's recent activities:
