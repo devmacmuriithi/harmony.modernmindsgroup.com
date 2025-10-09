@@ -4,13 +4,6 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Send, Loader2, ArrowLeft, History, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
 
 interface Guide {
   id: string;
@@ -42,7 +35,7 @@ export default function GuidesWindow() {
   const [selectedGuide, setSelectedGuide] = useState<Guide | null>(null);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [messageInput, setMessageInput] = useState('');
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const { data: guidesData, isLoading: guidesLoading, error: guidesError } = useQuery<{ data: Guide[] }>({
     queryKey: ['/api/guides']
@@ -79,6 +72,7 @@ export default function GuidesWindow() {
     },
     onSuccess: (result) => {
       setActiveConversation(result.data);
+      setShowHistory(false);
       queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
     }
   });
@@ -103,12 +97,19 @@ export default function GuidesWindow() {
 
   const handleGuideSelect = (guide: Guide) => {
     setSelectedGuide(guide);
+    setShowHistory(false);
     createConversationMutation.mutate({ guideId: guide.id, guideName: guide.name });
   };
 
   const handleSelectConversation = (conversation: Conversation) => {
     setActiveConversation(conversation);
-    setIsHistoryOpen(false);
+    setShowHistory(false);
+  };
+
+  const handleNewConversation = () => {
+    if (selectedGuide) {
+      createConversationMutation.mutate({ guideId: selectedGuide.id, guideName: selectedGuide.name });
+    }
   };
 
   const handleSendMessage = () => {
@@ -120,6 +121,7 @@ export default function GuidesWindow() {
   const handleBack = () => {
     setSelectedGuide(null);
     setActiveConversation(null);
+    setShowHistory(false);
   };
 
   if (guidesLoading) {
@@ -176,6 +178,48 @@ export default function GuidesWindow() {
   // Get conversations for current guide
   const guideConversations = conversations.filter(c => c.guideId === selectedGuide.id);
   
+  // Show history view
+  if (showHistory) {
+    return (
+      <div className="space-y-4 h-full flex flex-col">
+        <div className="flex items-center gap-3">
+          <Button size="icon" variant="ghost" onClick={() => setShowHistory(false)} data-testid="button-back-to-chat">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold text-foreground">Conversation History</h2>
+            <p className="text-xs text-muted-foreground">{selectedGuide.emoji} {selectedGuide.name}</p>
+          </div>
+          <Button size="sm" onClick={handleNewConversation} data-testid="button-new-conversation">
+            New Chat
+          </Button>
+        </div>
+        
+        <div className="flex-1 overflow-auto space-y-2">
+          {guideConversations.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No conversations yet</p>
+          ) : (
+            guideConversations.map(conv => (
+              <button
+                key={conv.id}
+                onClick={() => handleSelectConversation(conv)}
+                className={`w-full p-3 rounded-lg border border-border text-left hover-elevate ${
+                  activeConversation?.id === conv.id ? 'bg-primary/10 border-primary' : 'bg-card'
+                }`}
+                data-testid={`history-conversation-${conv.id}`}
+              >
+                <div className="text-sm font-medium text-foreground line-clamp-1">{conv.title}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {new Date(conv.createdAt).toLocaleDateString()}
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  }
+  
   // Chat view
   const messages = messagesData?.data || [];
 
@@ -189,39 +233,16 @@ export default function GuidesWindow() {
           <h2 className="text-lg font-semibold text-foreground">{selectedGuide.emoji} {selectedGuide.name}</h2>
           <p className="text-xs text-muted-foreground">{selectedGuide.description}</p>
         </div>
-        <Sheet open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
-          <SheetTrigger asChild>
-            <Button size="icon" variant="ghost" data-testid="button-conversation-history">
-              <History className="h-4 w-4" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent>
-            <SheetHeader>
-              <SheetTitle>Conversation History</SheetTitle>
-            </SheetHeader>
-            <div className="mt-4 space-y-2">
-              {guideConversations.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No conversations yet</p>
-              ) : (
-                guideConversations.map(conv => (
-                  <button
-                    key={conv.id}
-                    onClick={() => handleSelectConversation(conv)}
-                    className={`w-full p-3 rounded-lg border border-border text-left hover-elevate ${
-                      activeConversation?.id === conv.id ? 'bg-primary/10 border-primary' : 'bg-card'
-                    }`}
-                    data-testid={`history-conversation-${conv.id}`}
-                  >
-                    <div className="text-sm font-medium text-foreground line-clamp-1">{conv.title}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {new Date(conv.createdAt).toLocaleDateString()}
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          </SheetContent>
-        </Sheet>
+        {guideConversations.length > 0 && (
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            onClick={() => setShowHistory(true)}
+            data-testid="button-show-history"
+          >
+            <History className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       <div className="flex-1 flex flex-col min-h-0">
