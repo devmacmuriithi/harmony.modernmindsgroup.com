@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2, Trash2, Edit, Save, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Plus, Loader2, Trash2, Edit, Save, X, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
@@ -20,6 +21,7 @@ export default function NotesWindow() {
   const [newNoteContent, setNewNoteContent] = useState('');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: notesData, isLoading, error } = useQuery<{ data: Note[] }>({
     queryKey: ['/api/notes']
@@ -107,10 +109,29 @@ export default function NotesWindow() {
 
   const notes = notesData?.data || [];
 
+  // Filter notes by search query (content or AI tags)
+  const filteredNotes = notes.filter(note => 
+    !searchQuery || 
+    note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    note.aiTags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   return (
     <div className="space-y-4 h-full flex flex-col">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-foreground">Sync Notes</h2>
+      </div>
+
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search notes or tags..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+          data-testid="input-search-notes"
+        />
       </div>
 
       <div className="space-y-2">
@@ -146,8 +167,12 @@ export default function NotesWindow() {
           <div className="text-center text-muted-foreground text-sm py-8">
             No notes yet. Create your first note above!
           </div>
+        ) : filteredNotes.length === 0 ? (
+          <div className="text-center text-muted-foreground text-sm py-8">
+            No notes match your search
+          </div>
         ) : (
-          notes.map(note => (
+          filteredNotes.map(note => (
             <div
               key={note.id}
               className="p-4 rounded-lg border border-border bg-card"
