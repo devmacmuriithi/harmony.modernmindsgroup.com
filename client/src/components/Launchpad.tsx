@@ -33,7 +33,7 @@ export default function Launchpad({ isOpen, onClose, onAppClick }: LaunchpadProp
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-foreground">Launch Apps</h2>
+          <h2 className="text-2xl font-bold text-foreground">Available On Harmony</h2>
           <button
             onClick={onClose}
             className="p-2 rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
