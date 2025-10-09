@@ -1,4 +1,3 @@
-import OpenAI from 'openai';
 import { db } from './db';
 import { 
   personalizationRuns, 
@@ -12,10 +11,7 @@ import {
   flourishingScores
 } from '@shared/schema';
 import { desc, eq } from 'drizzle-orm';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+import { llmClient } from './llm-client';
 
 // Get events summary for AI
 async function getEventsSummary(userId: string): Promise<string> {
@@ -63,17 +59,16 @@ ${eventsSummary}
 
 Respond with JSON only.`;
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const response = await llmClient.chatCompletion({
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Generate a Bible verse recommendation based on my recent activities.' }
       ],
       temperature: 0.7,
-      max_tokens: 300
+      maxTokens: 300
     });
 
-    const aiResponse = response.choices[0].message.content || '';
+    const aiResponse = response.content || '';
     const verse = JSON.parse(aiResponse);
 
     // Fetch actual verse content from Bible API
@@ -160,17 +155,16 @@ ${eventsSummary}
 
 Respond with JSON only.`;
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const response = await llmClient.chatCompletion({
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Generate a devotional based on my recent activities.' }
       ],
       temperature: 0.7,
-      max_tokens: 500
+      maxTokens: 500
     });
 
-    const aiResponse = response.choices[0].message.content || '';
+    const aiResponse = response.content || '';
     const devotional = JSON.parse(aiResponse);
 
     await db.update(personalizationRuns)
@@ -235,17 +229,16 @@ ${eventsSummary}
 
 Recommend videos about sermons, teachings, worship, testimonies, or Christian living. Respond with JSON only.`;
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const response = await llmClient.chatCompletion({
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Generate video recommendations based on my recent activities.' }
       ],
       temperature: 0.7,
-      max_tokens: 1500
+      maxTokens: 1500
     });
 
-    const aiResponse = response.choices[0].message.content || '';
+    const aiResponse = response.content || '';
     const videoList = JSON.parse(aiResponse);
 
     await db.update(personalizationRuns)
@@ -310,17 +303,16 @@ ${eventsSummary}
 
 Respond with JSON only.`;
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const response = await llmClient.chatCompletion({
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Generate song recommendations based on my recent activities.' }
       ],
       temperature: 0.7,
-      max_tokens: 1000
+      maxTokens: 1000
     });
 
-    const aiResponse = response.choices[0].message.content || '';
+    const aiResponse = response.content || '';
     const songList = JSON.parse(aiResponse);
 
     await db.update(personalizationRuns)
@@ -385,17 +377,16 @@ ${eventsSummary}
 
 Generate AI-powered sermon recommendations that will encourage spiritual growth. Respond with JSON only.`;
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const response = await llmClient.chatCompletion({
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Generate sermon recommendations based on my recent activities.' }
       ],
       temperature: 0.7,
-      max_tokens: 1500
+      maxTokens: 1500
     });
 
-    const aiResponse = response.choices[0].message.content || '';
+    const aiResponse = response.content || '';
     const sermonList = JSON.parse(aiResponse);
 
     await db.update(personalizationRuns)
@@ -463,17 +454,16 @@ ${eventsSummary}
 
 Provide diverse resource types. Include reputable Christian publishers, ministries, and authors. Ensure URLs are real and accessible. Respond with JSON only.`;
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const response = await llmClient.chatCompletion({
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Generate resource recommendations based on my recent activities.' }
       ],
       temperature: 0.7,
-      max_tokens: 2000
+      maxTokens: 2000
     });
 
-    const aiResponse = response.choices[0].message.content || '';
+    const aiResponse = response.content || '';
     const resourceList = JSON.parse(aiResponse);
 
     await db.update(personalizationRuns)
@@ -553,17 +543,16 @@ ${eventsSummary}
 
 Respond with JSON only.`;
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const response = await llmClient.chatCompletion({
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Calculate my flourishing scores based on my recent activities.' }
       ],
       temperature: 0.7,
-      max_tokens: 500
+      maxTokens: 500
     });
 
-    const aiResponse = response.choices[0].message.content || '';
+    const aiResponse = response.content || '';
     const scores = JSON.parse(aiResponse);
 
     await db.update(personalizationRuns)
