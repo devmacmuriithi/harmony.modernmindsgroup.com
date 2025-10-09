@@ -212,6 +212,42 @@ export const personalizationRuns = pgTable("personalization_runs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Faith Circles Table (Community discussion groups/forums)
+export const faithCircles = pgTable("faith_circles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  creatorId: uuid("creator_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  category: varchar("category", { length: 50 }).notNull(),
+  memberCount: integer("member_count").default(0),
+  isPublic: boolean("is_public").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  categoryIdx: index("idx_faith_circles_category").on(table.category),
+}));
+
+// Faith Circle Members Table (Track who joined which circles)
+export const faithCircleMembers = pgTable("faith_circle_members", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  circleId: uuid("circle_id").references(() => faithCircles.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  joinedAt: timestamp("joined_at").defaultNow(),
+}, (table) => ({
+  circleMembersIdx: index("idx_circle_members").on(table.circleId, table.userId),
+}));
+
+// Faith Circle Posts Table (Forum-style discussions)
+export const faithCirclePosts = pgTable("faith_circle_posts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  circleId: uuid("circle_id").references(() => faithCircles.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  circlePostsIdx: index("idx_circle_posts").on(table.circleId, table.createdAt),
+}));
+
 // Insert Schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true });
@@ -230,6 +266,9 @@ export const insertSermonSchema = createInsertSchema(sermons).omit({ id: true, c
 export const insertResourceSchema = createInsertSchema(resources).omit({ id: true, createdAt: true });
 export const insertFlourishingScoreSchema = createInsertSchema(flourishingScores).omit({ id: true, createdAt: true });
 export const insertPersonalizationRunSchema = createInsertSchema(personalizationRuns).omit({ id: true, createdAt: true });
+export const insertFaithCircleSchema = createInsertSchema(faithCircles).omit({ id: true, createdAt: true, updatedAt: true, memberCount: true });
+export const insertFaithCircleMemberSchema = createInsertSchema(faithCircleMembers).omit({ id: true, joinedAt: true });
+export const insertFaithCirclePostSchema = createInsertSchema(faithCirclePosts).omit({ id: true, createdAt: true });
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -284,3 +323,12 @@ export type FlourishingScore = typeof flourishingScores.$inferSelect;
 
 export type InsertPersonalizationRun = z.infer<typeof insertPersonalizationRunSchema>;
 export type PersonalizationRun = typeof personalizationRuns.$inferSelect;
+
+export type InsertFaithCircle = z.infer<typeof insertFaithCircleSchema>;
+export type FaithCircle = typeof faithCircles.$inferSelect;
+
+export type InsertFaithCircleMember = z.infer<typeof insertFaithCircleMemberSchema>;
+export type FaithCircleMember = typeof faithCircleMembers.$inferSelect;
+
+export type InsertFaithCirclePost = z.infer<typeof insertFaithCirclePostSchema>;
+export type FaithCirclePost = typeof faithCirclePosts.$inferSelect;
