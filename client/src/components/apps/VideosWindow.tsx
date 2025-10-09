@@ -1,28 +1,112 @@
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { Button } from '@/components/ui/button';
+import { Loader2, RefreshCw, ExternalLink } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+interface Video {
+  id: string;
+  userId: string;
+  title: string;
+  youtubeId: string;
+  description: string | null;
+  createdAt: string;
+}
+
 export default function VideosWindow() {
-  //todo: remove mock functionality
-  const videos = [
-    { id: 1, title: 'The Power of Faith in Difficult Times', channel: 'Daily Devotions', thumbnail: 'https://picsum.photos/seed/video1/400/225' },
-    { id: 2, title: 'Understanding Grace and Mercy', channel: 'Theology Explained', thumbnail: 'https://picsum.photos/seed/video2/400/225' },
-    { id: 3, title: 'Building Strong Christian Relationships', channel: 'Life Together', thumbnail: 'https://picsum.photos/seed/video3/400/225' },
-  ];
+  const { toast } = useToast();
+
+  const { data: videosData, isLoading } = useQuery<{ data: Video[] }>({
+    queryKey: ['/api/videos']
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/videos/generate');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/videos'] });
+      toast({ title: 'Videos updated!', description: 'New personalized videos recommended.' });
+    }
+  });
+
+  const watchMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest('POST', `/api/videos/${id}/watch`);
+      return res.json();
+    }
+  });
+
+  const handleWatch = (video: Video) => {
+    watchMutation.mutate(video.id);
+    window.open(`https://www.youtube.com/watch?v=${video.youtubeId}`, '_blank');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const videos = videosData?.data || [];
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-foreground">Recommended Videos</h2>
-      <div className="space-y-4">
-        {videos.map(video => (
-          <div 
-            key={video.id}
-            className="rounded-lg overflow-hidden border border-border bg-card hover-elevate cursor-pointer"
-            data-testid={`video-${video.id}`}
-          >
-            <img src={video.thumbnail} alt={video.title} className="w-full h-32 object-cover" />
-            <div className="p-3">
-              <h3 className="font-medium text-foreground text-sm mb-1">{video.title}</h3>
-              <p className="text-xs text-muted-foreground">{video.channel}</p>
-            </div>
+    <div className="space-y-4 h-full flex flex-col">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-foreground">Faith Videos</h2>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => generateMutation.mutate()}
+          disabled={generateMutation.isPending}
+          data-testid="button-generate-videos"
+        >
+          {generateMutation.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-2 h-4 w-4" />
+          )}
+          Refresh
+        </Button>
+      </div>
+
+      <div className="flex-1 overflow-auto space-y-3">
+        {videos.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground mb-4">No videos yet</p>
+            <Button onClick={() => generateMutation.mutate()} data-testid="button-get-videos">
+              Get Personalized Videos
+            </Button>
           </div>
-        ))}
+        ) : (
+          videos.map(video => (
+            <div
+              key={video.id}
+              className="p-4 rounded-lg border border-border bg-card hover-elevate"
+              data-testid={`video-item-${video.id}`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground mb-1">{video.title}</h3>
+                  {video.description && (
+                    <p className="text-sm text-muted-foreground mb-2">{video.description}</p>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => handleWatch(video)}
+                  data-testid={`button-watch-${video.id}`}
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Watch
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
