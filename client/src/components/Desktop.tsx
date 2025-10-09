@@ -5,6 +5,7 @@ import DesktopDock, { apps } from './DesktopDock';
 import DesktopIcon from './DesktopIcon';
 import TileView from './TileView';
 import Window from './Window';
+import Launchpad from './Launchpad';
 
 import BibleWindow from './apps/BibleWindow';
 import DevotionalWindow from './apps/DevotionalWindow';
@@ -41,8 +42,16 @@ const appComponents: Record<string, { component: React.ReactNode; title: string;
 export default function Desktop() {
   const [viewMode, setViewMode] = useState<'tiles' | 'icons'>('tiles');
   const [openWindows, setOpenWindows] = useState<string[]>([]);
+  const [launchedApps, setLaunchedApps] = useState<string[]>([]);
+  const [isLaunchpadOpen, setIsLaunchpadOpen] = useState(false);
 
   const handleAppClick = (appId: string) => {
+    // Track launched apps
+    if (!launchedApps.includes(appId)) {
+      setLaunchedApps([...launchedApps, appId]);
+    }
+    
+    // Open window if not already open
     if (!openWindows.includes(appId)) {
       setOpenWindows([...openWindows, appId]);
     }
@@ -96,7 +105,18 @@ export default function Desktop() {
         })}
       </main>
 
-      <DesktopDock onAppClick={handleAppClick} />
+      <DesktopDock 
+        onAppClick={handleAppClick}
+        onLaunchpadClick={() => setIsLaunchpadOpen(true)}
+        activeApps={openWindows}
+        launchedApps={launchedApps}
+      />
+
+      <Launchpad
+        isOpen={isLaunchpadOpen}
+        onClose={() => setIsLaunchpadOpen(false)}
+        onAppClick={handleAppClick}
+      />
     </DesktopBackground>
   );
 }
