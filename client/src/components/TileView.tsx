@@ -19,6 +19,7 @@ export default function TileView({ onAppClick }: TileViewProps) {
   const { data: sermonsData } = useQuery<{ data: any[] }>({ queryKey: ['/api/sermons'] });
   const { data: resourcesData } = useQuery<{ data: any[] }>({ queryKey: ['/api/resources'] });
   const { data: moodsData } = useQuery<{ data: any[] }>({ queryKey: ['/api/moods'] });
+  const { data: circlesData } = useQuery<{ data: any[] }>({ queryKey: ['/api/faith-circles'] });
 
   const flourishing = flourishingData?.data;
   const latestBible = bibleData?.data?.[0];
@@ -266,6 +267,24 @@ export default function TileView({ onAppClick }: TileViewProps) {
             </>
           ) : (
             <div className="text-xs opacity-90">Get resources</div>
+          )}
+        </button>
+
+        {/* Faith Circles */}
+        <button
+          onClick={() => onAppClick('faith-circles')}
+          data-testid="tile-faith-circles"
+          className="tile-small cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl rounded-xl p-4 bg-gradient-to-br from-pink-400 to-rose-500 text-white"
+        >
+          <div className="text-2xl mb-2">⭕</div>
+          <div className="font-semibold mb-1">Faith Circles</div>
+          {circlesData?.data && circlesData.data.length > 0 ? (
+            <>
+              <div className="text-xs opacity-90">{circlesData.data.length} circles available</div>
+              <div className="text-xs opacity-75 mt-1">{circlesData.data.filter((c: any) => c.isMember).length} joined</div>
+            </>
+          ) : (
+            <div className="text-xs opacity-90">Join community circles</div>
           )}
         </button>
 

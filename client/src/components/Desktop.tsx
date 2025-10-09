@@ -21,6 +21,7 @@ import LibraryWindow from './apps/LibraryWindow';
 import FlourishingWindow from './apps/FlourishingWindow';
 import CalendarWindow from './apps/CalendarWindow';
 import SettingsWindow from './apps/SettingsWindow';
+import FaithCirclesWindow from './apps/FaithCirclesWindow';
 
 const appComponents: Record<string, { component: React.ReactNode; title: string; icon: string }> = {
   bible: { component: <BibleWindow />, title: 'Bible', icon: '📖' },
@@ -30,6 +31,7 @@ const appComponents: Record<string, { component: React.ReactNode; title: string;
   guides: { component: <GuidesWindow />, title: 'Spiritual Guides', icon: '👥' },
   notes: { component: <NotesWindow />, title: 'Sync Notes', icon: '📝' },
   'prayer-chain': { component: <PrayerChainWindow />, title: 'Prayer Chain', icon: '🔗' },
+  'faith-circles': { component: <FaithCirclesWindow />, title: 'Faith Circles', icon: '⭕' },
   videos: { component: <VideosWindow />, title: 'Videos', icon: '📺' },
   songs: { component: <SongsWindow />, title: 'Songs', icon: '🎵' },
   sermons: { component: <SermonsWindow />, title: 'Sermons', icon: '🎤' },

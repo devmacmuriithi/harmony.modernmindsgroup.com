@@ -10,7 +10,9 @@ export type EventType =
   | 'guide_chat' 
   | 'video_watched' 
   | 'song_listened' 
-  | 'resource_read';
+  | 'resource_read'
+  | 'circle_joined'
+  | 'circle_post';
 
 // Track pending flourishing calculations per user to avoid duplicate calls
 const pendingCalculations = new Map<string, NodeJS.Timeout>();

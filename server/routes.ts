@@ -4,7 +4,9 @@ import { db } from './db';
 import { 
   users, moods, prayerJournals, devotionals, bibleVerses, syncNotes,
   spiritualGuides, conversations, messages, prayerChains, prayerChainComments,
-  videos, songs, sermons, resources, flourishingScores
+  videos, songs, sermons, resources, flourishingScores,
+  faithCircles, faithCircleMembers, faithCirclePosts,
+  insertFaithCircleSchema, insertFaithCirclePostSchema
 } from '@shared/schema';
 import { eq, desc, and, or, ilike, sql } from 'drizzle-orm';
 import './auth'; // Import session type declarations
@@ -711,6 +713,293 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Flourishing generation error:', error);
       res.status(500).json({ success: false, error: { code: 'PERSONALIZATION_FAILED', message: 'Failed to calculate flourishing scores' } });
+    }
+  });
+
+  // ============ FAITH CIRCLES ============
+  
+  // Get all faith circles
+  app.get('/api/faith-circles', requireAuth, async (req, res) => {
+    try {
+      const { category, search } = req.query;
+      
+      const conditions = [];
+      if (category && category !== 'all') {
+        conditions.push(eq(faithCircles.category, category as string));
+      }
+      if (search) {
+        conditions.push(
+          or(
+            ilike(faithCircles.title, `%${search}%`),
+            ilike(faithCircles.description, `%${search}%`)
+          )
+        );
+      }
+      
+      const circles = await db.select({
+        id: faithCircles.id,
+        creatorId: faithCircles.creatorId,
+        title: faithCircles.title,
+        description: faithCircles.description,
+        category: faithCircles.category,
+        memberCount: faithCircles.memberCount,
+        isPublic: faithCircles.isPublic,
+        createdAt: faithCircles.createdAt,
+        updatedAt: faithCircles.updatedAt,
+        creatorName: users.name,
+      })
+      .from(faithCircles)
+      .leftJoin(users, eq(faithCircles.creatorId, users.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(faithCircles.updatedAt));
+      
+      // Check which circles the user has joined
+      const userMemberships = await db.select()
+        .from(faithCircleMembers)
+        .where(eq(faithCircleMembers.userId, req.user!.id));
+      
+      const membershipMap = new Map(userMemberships.map(m => [m.circleId, true]));
+      
+      const circlesWithMembership = circles.map(circle => ({
+        ...circle,
+        isMember: membershipMap.has(circle.id)
+      }));
+      
+      res.json({ success: true, data: circlesWithMembership });
+    } catch (error) {
+      console.error('Faith circles fetch error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to fetch faith circles' } });
+    }
+  });
+
+  // Create new faith circle
+  app.post('/api/faith-circles', requireAuth, async (req, res) => {
+    try {
+      const validated = insertFaithCircleSchema.parse({
+        ...req.body,
+        creatorId: req.user!.id
+      });
+      
+      const circle = await db.insert(faithCircles).values(validated).returning();
+      
+      // Automatically join the creator as a member
+      await db.insert(faithCircleMembers).values({
+        circleId: circle[0].id,
+        userId: req.user!.id
+      });
+      
+      // Update member count
+      await db.update(faithCircles)
+        .set({ memberCount: 1 })
+        .where(eq(faithCircles.id, circle[0].id));
+      
+      res.json({ success: true, data: circle[0] });
+    } catch (error) {
+      console.error('Create circle error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to create circle' } });
+    }
+  });
+
+  // Get circle details
+  app.get('/api/faith-circles/:id', requireAuth, async (req, res) => {
+    try {
+      const circle = await db.select({
+        id: faithCircles.id,
+        creatorId: faithCircles.creatorId,
+        title: faithCircles.title,
+        description: faithCircles.description,
+        category: faithCircles.category,
+        memberCount: faithCircles.memberCount,
+        isPublic: faithCircles.isPublic,
+        createdAt: faithCircles.createdAt,
+        updatedAt: faithCircles.updatedAt,
+        creatorName: users.name,
+      })
+      .from(faithCircles)
+      .leftJoin(users, eq(faithCircles.creatorId, users.id))
+      .where(eq(faithCircles.id, req.params.id))
+      .limit(1);
+      
+      if (circle.length === 0) {
+        return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Circle not found' } });
+      }
+      
+      // Check if user is a member
+      const membership = await db.select()
+        .from(faithCircleMembers)
+        .where(and(
+          eq(faithCircleMembers.circleId, req.params.id),
+          eq(faithCircleMembers.userId, req.user!.id)
+        ))
+        .limit(1);
+      
+      res.json({ 
+        success: true, 
+        data: {
+          ...circle[0],
+          isMember: membership.length > 0
+        }
+      });
+    } catch (error) {
+      console.error('Circle details error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to fetch circle details' } });
+    }
+  });
+
+  // Join circle
+  app.post('/api/faith-circles/:id/join', requireAuth, async (req, res) => {
+    try {
+      // Check if already a member
+      const existing = await db.select()
+        .from(faithCircleMembers)
+        .where(and(
+          eq(faithCircleMembers.circleId, req.params.id),
+          eq(faithCircleMembers.userId, req.user!.id)
+        ))
+        .limit(1);
+      
+      if (existing.length > 0) {
+        return res.status(400).json({ success: false, error: { code: 'ALREADY_MEMBER', message: 'Already a member of this circle' } });
+      }
+      
+      // Add member
+      await db.insert(faithCircleMembers).values({
+        circleId: req.params.id,
+        userId: req.user!.id
+      });
+      
+      // Increment member count
+      await db.update(faithCircles)
+        .set({ memberCount: sql`${faithCircles.memberCount} + 1` })
+        .where(eq(faithCircles.id, req.params.id));
+      
+      // Get circle info for event
+      const circle = await db.select().from(faithCircles)
+        .where(eq(faithCircles.id, req.params.id))
+        .limit(1);
+      
+      if (circle.length > 0) {
+        await createEvent(req.user!.id, 'circle_joined', {
+          circle_id: req.params.id,
+          circle_title: circle[0].title
+        });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Join circle error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to join circle' } });
+    }
+  });
+
+  // Leave circle
+  app.post('/api/faith-circles/:id/leave', requireAuth, async (req, res) => {
+    try {
+      // Remove member
+      await db.delete(faithCircleMembers)
+        .where(and(
+          eq(faithCircleMembers.circleId, req.params.id),
+          eq(faithCircleMembers.userId, req.user!.id)
+        ));
+      
+      // Decrement member count
+      await db.update(faithCircles)
+        .set({ memberCount: sql`${faithCircles.memberCount} - 1` })
+        .where(eq(faithCircles.id, req.params.id));
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Leave circle error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to leave circle' } });
+    }
+  });
+
+  // Get circle posts
+  app.get('/api/faith-circles/:id/posts', requireAuth, async (req, res) => {
+    try {
+      const posts = await db.select({
+        id: faithCirclePosts.id,
+        circleId: faithCirclePosts.circleId,
+        userId: faithCirclePosts.userId,
+        content: faithCirclePosts.content,
+        createdAt: faithCirclePosts.createdAt,
+        userName: users.name,
+        userEmail: users.email,
+      })
+      .from(faithCirclePosts)
+      .leftJoin(users, eq(faithCirclePosts.userId, users.id))
+      .where(eq(faithCirclePosts.circleId, req.params.id))
+      .orderBy(desc(faithCirclePosts.createdAt))
+      .limit(50);
+      
+      res.json({ success: true, data: posts });
+    } catch (error) {
+      console.error('Fetch posts error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to fetch posts' } });
+    }
+  });
+
+  // Create post in circle
+  app.post('/api/faith-circles/:id/posts', requireAuth, async (req, res) => {
+    try {
+      // Check if user is a member
+      const membership = await db.select()
+        .from(faithCircleMembers)
+        .where(and(
+          eq(faithCircleMembers.circleId, req.params.id),
+          eq(faithCircleMembers.userId, req.user!.id)
+        ))
+        .limit(1);
+      
+      if (membership.length === 0) {
+        return res.status(403).json({ success: false, error: { code: 'NOT_MEMBER', message: 'Must be a member to post' } });
+      }
+      
+      const validated = insertFaithCirclePostSchema.parse({
+        circleId: req.params.id,
+        userId: req.user!.id,
+        content: req.body.content
+      });
+      
+      const post = await db.insert(faithCirclePosts).values(validated).returning();
+      
+      // Update circle's updated_at
+      await db.update(faithCircles)
+        .set({ updatedAt: new Date() })
+        .where(eq(faithCircles.id, req.params.id));
+      
+      // Get circle info for event
+      const circle = await db.select().from(faithCircles)
+        .where(eq(faithCircles.id, req.params.id))
+        .limit(1);
+      
+      if (circle.length > 0) {
+        await createEvent(req.user!.id, 'circle_post', {
+          circle_id: req.params.id,
+          circle_title: circle[0].title,
+          post_preview: validated.content.substring(0, 100)
+        });
+      }
+      
+      // Return post with user info
+      const postWithUser = await db.select({
+        id: faithCirclePosts.id,
+        circleId: faithCirclePosts.circleId,
+        userId: faithCirclePosts.userId,
+        content: faithCirclePosts.content,
+        createdAt: faithCirclePosts.createdAt,
+        userName: users.name,
+        userEmail: users.email,
+      })
+      .from(faithCirclePosts)
+      .leftJoin(users, eq(faithCirclePosts.userId, users.id))
+      .where(eq(faithCirclePosts.id, post[0].id))
+      .limit(1);
+      
+      res.json({ success: true, data: postWithUser[0] });
+    } catch (error) {
+      console.error('Create post error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to create post' } });
     }
   });
 
