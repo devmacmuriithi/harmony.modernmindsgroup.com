@@ -76,6 +76,35 @@ Respond with JSON only.`;
     const aiResponse = response.choices[0].message.content || '';
     const verse = JSON.parse(aiResponse);
 
+    // Fetch actual verse content from Bible API
+    // bible-api.com only supports: KJV, WEB (default), and a few others
+    // Map any translation to a supported one
+    const supportedTranslation = 'kjv'; // King James Version is widely supported
+    
+    const verseRef = verse.verse_end 
+      ? `${verse.book}+${verse.chapter}:${verse.verse_start}-${verse.verse_end}`
+      : `${verse.book}+${verse.chapter}:${verse.verse_start}`;
+    
+    let verseContent = '';
+    try {
+      const bibleResponse = await fetch(`https://bible-api.com/${verseRef}?translation=${supportedTranslation}`);
+      
+      if (!bibleResponse.ok) {
+        throw new Error(`Bible API returned ${bibleResponse.status}`);
+      }
+      
+      const bibleData = await bibleResponse.json();
+      verseContent = bibleData.text?.trim() || '';
+      
+      if (!verseContent) {
+        // Fallback if text is missing
+        verseContent = `For the verse ${verse.book} ${verse.chapter}:${verse.verse_start}, please open your Bible.`;
+      }
+    } catch (error) {
+      console.error('Failed to fetch verse content:', error);
+      verseContent = `For the verse ${verse.book} ${verse.chapter}:${verse.verse_start}, please open your Bible.`;
+    }
+
     await db.update(personalizationRuns)
       .set({ outputData: verse, status: 'completed' })
       .where(eq(personalizationRuns.id, runId));
@@ -86,7 +115,8 @@ Respond with JSON only.`;
       chapter: verse.chapter,
       verseStart: verse.verse_start,
       verseEnd: verse.verse_end,
-      translation: verse.translation,
+      translation: 'KJV', // Store the actual translation used
+      content: verseContent,
       notes: verse.reason,
       personalizationRunId: runId
     }).returning();

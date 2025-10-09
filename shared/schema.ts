@@ -63,6 +63,7 @@ export const bibleVerses = pgTable("bible_verses", {
   verseStart: integer("verse_start").notNull(),
   verseEnd: integer("verse_end"),
   translation: varchar("translation", { length: 10 }).default("NIV"),
+  content: text("content"), // The actual verse text
   notes: text("notes"),
   personalizationRunId: uuid("personalization_run_id"),
   createdAt: timestamp("created_at").defaultNow(),

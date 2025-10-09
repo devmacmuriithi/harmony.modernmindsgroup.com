@@ -205,7 +205,10 @@ Preferred communication style: Simple, everyday language.
 
 2. **Bible App** (`/api/bible-verses`)
    - AI-personalized verse recommendations
+   - **Displays actual verse content**: Fetches real scripture text from Bible API
+   - Shows verse text in KJV (King James Version) translation
    - Generates verses based on mood, prayers, and spiritual journey
+   - AI reasoning displayed as "Previous reflection"
    - Note-taking capability with backend persistence
    - Refresh to get new personalized verses
 

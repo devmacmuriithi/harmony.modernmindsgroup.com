@@ -13,6 +13,7 @@ interface BibleVerse {
   verseStart: number;
   verseEnd: number | null;
   translation: string;
+  content: string | null;
   notes: string | null;
   createdAt: string;
 }
@@ -111,20 +112,33 @@ export default function BibleWindow() {
       </div>
 
       <div className="space-y-4" data-testid="text-verse-content">
+        {/* Actual Verse Content */}
+        {latestVerse.content && (
+          <div className="p-6 bg-background border border-border rounded-lg">
+            <p className="text-lg font-serif leading-relaxed text-foreground italic">
+              "{latestVerse.content}"
+            </p>
+          </div>
+        )}
+
+        {/* AI Personalization */}
         <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
           <p className="text-sm text-muted-foreground mb-2">
             ✨ AI-Personalized Verse Recommendation
           </p>
-          <p className="text-lg font-serif font-semibold text-foreground">
+          <p className="text-base font-semibold text-foreground">
             {verseReference}
           </p>
           <p className="text-sm text-muted-foreground mt-2">
             This verse was personalized based on your spiritual journey, moods, and prayer patterns.
           </p>
         </div>
+
+        {/* Previous Reflection (AI's reasoning) */}
         {latestVerse.notes && (
-          <div className="mt-4 p-3 bg-muted rounded-lg">
-            <p className="text-sm"><strong>Previous reflection:</strong> {latestVerse.notes}</p>
+          <div className="p-4 bg-muted rounded-lg">
+            <p className="text-sm font-medium text-foreground mb-1">Previous reflection:</p>
+            <p className="text-sm text-muted-foreground">{latestVerse.notes}</p>
           </div>
         )}
       </div>

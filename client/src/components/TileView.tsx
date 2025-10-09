@@ -93,7 +93,9 @@ export default function TileView({ onAppClick }: TileViewProps) {
                 {latestBible.book} {latestBible.chapter}:{latestBible.verseStart}
                 {latestBible.verseEnd && latestBible.verseEnd !== latestBible.verseStart ? `-${latestBible.verseEnd}` : ''}
               </div>
-              <div className="text-sm font-serif italic line-clamp-2">{latestBible.notes}</div>
+              <div className="text-sm font-serif italic line-clamp-2">
+                {latestBible.content || latestBible.notes || 'Tap to read'}
+              </div>
             </>
           ) : (
             <div className="text-xs opacity-90">Tap to get personalized verses</div>
