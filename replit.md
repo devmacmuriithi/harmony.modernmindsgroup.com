@@ -146,7 +146,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### AI Insights & Sermon Enhancements (Latest - October 2025)
+### AI Insights & Auto-Refresh (Latest - October 2025)
 
 **Flourishing Index AI Insights**: ✅ Complete
 - Added `aiInsight` TEXT field to flourishing_scores table
@@ -155,6 +155,14 @@ Preferred communication style: Simple, everyday language.
 - Insights displayed prominently on Flourishing tile with "💡 AI Insight" header
 - Example insight: "Your 'Faith' score is slightly lower this week. Consider spending more time in the Prayer Journal or reading Scripture."
 - Insight guidelines: Personal, actionable, under 120 characters, app-specific recommendations
+- AI only suggests valid Harmony apps (never hallucinated apps like "Budget Tracker")
+
+**Flourishing Auto-Refresh**: ✅ Complete
+- Flourishing Index now updates IMMEDIATELY after user actions
+- Synchronous architecture: Post mood/prayer/bible → Trigger flourishing generation → Invalidate caches → Auto-refresh UI
+- No manual refresh needed - tile and window update automatically
+- Implemented in: MoodWindow (post mood), PrayerWindow (create/answer/delete), BibleWindow (generate verse)
+- Test-verified: Flourishing score updates from initial value to new score instantly after any activity
 
 **Sermon Personalization Updates**: ✅ Complete
 - Removed `pastor` field from sermons schema (sermons are fully AI-generated)

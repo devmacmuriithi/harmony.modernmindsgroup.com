@@ -35,10 +35,17 @@ export default function PrayerWindow() {
   const createMutation = useMutation({
     mutationFn: async (content: string) => {
       const res = await apiRequest('POST', '/api/prayers', { content });
-      return res.json();
+      await res.json();
+      
+      // Immediately trigger flourishing recalculation
+      const flourishingRes = await apiRequest('POST', '/api/flourishing/generate');
+      await flourishingRes.json();
+      
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/prayers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/flourishing'] });
       setNewPrayerContent('');
       setIsDialogOpen(false);
       toast({ title: 'Prayer added!', description: 'Your prayer has been saved.' });
@@ -51,10 +58,17 @@ export default function PrayerWindow() {
   const answerMutation = useMutation({
     mutationFn: async ({ id, isAnswered }: { id: string; isAnswered: boolean }) => {
       const res = await apiRequest('PATCH', `/api/prayers/${id}/answer`, { isAnswered });
-      return res.json();
+      await res.json();
+      
+      // Immediately trigger flourishing recalculation
+      const flourishingRes = await apiRequest('POST', '/api/flourishing/generate');
+      await flourishingRes.json();
+      
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/prayers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/flourishing'] });
       toast({ title: 'Updated!', description: 'Prayer status updated.' });
     },
     onError: () => {
@@ -65,10 +79,17 @@ export default function PrayerWindow() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await apiRequest('DELETE', `/api/prayers/${id}`);
-      return res.json();
+      await res.json();
+      
+      // Immediately trigger flourishing recalculation
+      const flourishingRes = await apiRequest('POST', '/api/flourishing/generate');
+      await flourishingRes.json();
+      
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/prayers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/flourishing'] });
       toast({ title: 'Deleted!', description: 'Prayer has been removed.' });
     },
     onError: () => {

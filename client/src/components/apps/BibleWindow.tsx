@@ -28,10 +28,17 @@ export default function BibleWindow() {
   const generateMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest('POST', '/api/bible-verses/generate');
-      return res.json();
+      await res.json();
+      
+      // Immediately trigger flourishing recalculation
+      const flourishingRes = await apiRequest('POST', '/api/flourishing/generate');
+      await flourishingRes.json();
+      
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bible-verses'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/flourishing'] });
       toast({ title: 'New verse generated!', description: 'Personalized for your spiritual journey.' });
     },
     onError: () => {

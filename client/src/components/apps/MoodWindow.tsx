@@ -32,14 +32,22 @@ export default function MoodWindow() {
 
   const moodMutation = useMutation({
     mutationFn: async ({ moodType, notes }: { moodType: string; notes: string }) => {
-      const res = await apiRequest('POST', '/api/moods', { moodType, notes });
-      return res.json();
+      // Post mood
+      const moodRes = await apiRequest('POST', '/api/moods', { moodType, notes });
+      await moodRes.json();
+      
+      // Immediately trigger flourishing recalculation
+      const flourishingRes = await apiRequest('POST', '/api/flourishing/generate');
+      await flourishingRes.json();
+      
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/moods'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/flourishing'] });
       setSelectedMood(null);
       setNotes('');
-      toast({ title: 'Mood tracked!', description: 'Your mood has been saved.' });
+      toast({ title: 'Mood tracked!', description: 'Your flourishing score has been updated.' });
     }
   });
 
