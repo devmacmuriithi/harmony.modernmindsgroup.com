@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2, Trash2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Plus, Loader2, Trash2, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -25,6 +26,7 @@ export default function PrayerWindow() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newPrayerContent, setNewPrayerContent] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: prayersData, isLoading } = useQuery<{ data: Prayer[] }>({
     queryKey: ['/api/prayers']
@@ -90,6 +92,11 @@ export default function PrayerWindow() {
 
   const prayers = prayersData?.data || [];
 
+  // Filter prayers by search query
+  const filteredPrayers = prayers.filter(prayer => 
+    !searchQuery || prayer.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -104,13 +111,29 @@ export default function PrayerWindow() {
         </Button>
       </div>
 
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search prayers..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+          data-testid="input-search-prayers"
+        />
+      </div>
+
       {prayers.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <p>No prayers yet. Add your first prayer!</p>
         </div>
+      ) : filteredPrayers.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <p>No prayers match your search</p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {prayers.map(prayer => (
+          {filteredPrayers.map(prayer => (
             <div 
               key={prayer.id} 
               className="p-3 rounded-lg border border-border bg-card hover-elevate"
