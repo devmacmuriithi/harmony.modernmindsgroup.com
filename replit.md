@@ -160,6 +160,9 @@ Preferred communication style: Simple, everyday language.
 
 **AI Personalization Engines**: ✅ Implemented (7 engines)
 1. **Flourishing Index Engine**: Generates AI-powered spiritual, emotional, relational scores with insights
+   - **Auto-calculation**: Triggers after every user event (5-second debounce)
+   - **Scheduled updates**: Recalculates every 30 minutes for all users
+   - Event-driven architecture ensures scores stay current
 2. **Bible Verse Engine**: Personalized verse recommendations based on user patterns
 3. **Devotional Engine**: AI-generated devotional content with scripture references
 4. **Prayer Insights Engine**: Analyzes prayer patterns for spiritual growth

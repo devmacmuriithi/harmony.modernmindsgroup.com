@@ -12,6 +12,33 @@ export type EventType =
   | 'song_listened' 
   | 'resource_read';
 
+// Track pending flourishing calculations per user to avoid duplicate calls
+const pendingCalculations = new Map<string, NodeJS.Timeout>();
+
+// Auto-trigger flourishing calculation after event
+async function autoCalculateFlourishing(userId: string) {
+  // Clear any existing pending calculation for this user
+  const existing = pendingCalculations.get(userId);
+  if (existing) {
+    clearTimeout(existing);
+  }
+
+  // Debounce: wait 5 seconds before calculating to batch multiple events
+  const timeout = setTimeout(async () => {
+    try {
+      const { runFlourishingEngine } = await import('./personalization');
+      await runFlourishingEngine(userId);
+      console.log(`✨ Auto-calculated flourishing scores for user ${userId}`);
+    } catch (error) {
+      console.error('Failed to auto-calculate flourishing:', error);
+    } finally {
+      pendingCalculations.delete(userId);
+    }
+  }, 5000); // 5 second debounce
+
+  pendingCalculations.set(userId, timeout);
+}
+
 export async function createEvent(
   userId: string,
   eventType: EventType,
@@ -23,6 +50,9 @@ export async function createEvent(
       eventType,
       eventData
     });
+
+    // Auto-trigger flourishing calculation after event
+    await autoCalculateFlourishing(userId);
   } catch (error) {
     console.error('Failed to create event:', error);
   }
