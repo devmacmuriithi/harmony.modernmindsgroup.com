@@ -107,6 +107,9 @@ export default function FaithCirclesWindow() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/faith-circles'] });
+      if (selectedCircle) {
+        setSelectedCircle({ ...selectedCircle, isMember: true, memberCount: selectedCircle.memberCount + 1 });
+      }
       toast({ title: 'Joined!', description: 'You are now a member of this circle.' });
     },
     onError: () => {
@@ -122,7 +125,7 @@ export default function FaithCirclesWindow() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/faith-circles'] });
       if (selectedCircle) {
-        setSelectedCircle({ ...selectedCircle, isMember: false });
+        setSelectedCircle({ ...selectedCircle, isMember: false, memberCount: Math.max(0, selectedCircle.memberCount - 1) });
       }
       toast({ title: 'Left circle', description: 'You are no longer a member.' });
     },
