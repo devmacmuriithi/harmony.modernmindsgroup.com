@@ -1166,6 +1166,224 @@ Return the verse in the requested translation. If no translation specified, use 
     }
   });
 
+  // ============ GLOBAL SEARCH ============
+  
+  app.get('/api/search', requireAuth, async (req, res) => {
+    try {
+      const query = (req.query.q as string)?.trim();
+      
+      if (!query || query.length < 2) {
+        return res.json({ success: true, data: { results: [] } });
+      }
+
+      const searchTerm = `%${query}%`;
+      const limit = 5; // Top 5 results per category
+
+      // Search across all entities in parallel
+      const [
+        bibleResults,
+        prayerResults,
+        devotionalResults,
+        noteResults,
+        guideResults,
+        videoResults,
+        songResults,
+        sermonResults,
+        resourceResults,
+        circleResults
+      ] = await Promise.all([
+        // Bible verses
+        db.select({
+          id: bibleVerses.id,
+          type: sql<string>`'bible'`,
+          title: sql<string>`${bibleVerses.book} || ' ' || ${bibleVerses.chapter} || ':' || ${bibleVerses.verseStart}`,
+          subtitle: bibleVerses.translation,
+          content: bibleVerses.content
+        })
+        .from(bibleVerses)
+        .where(and(
+          eq(bibleVerses.userId, req.user!.id),
+          or(
+            ilike(bibleVerses.book, searchTerm),
+            ilike(bibleVerses.content, searchTerm)
+          )
+        ))
+        .limit(limit),
+
+        // Prayers
+        db.select({
+          id: prayerJournals.id,
+          type: sql<string>`'prayer'`,
+          title: sql<string>`SUBSTRING(${prayerJournals.content}, 1, 50)`,
+          subtitle: sql<string>`CASE WHEN ${prayerJournals.isAnswered} THEN 'Answered' ELSE 'Ongoing' END`,
+          content: prayerJournals.content
+        })
+        .from(prayerJournals)
+        .where(and(
+          eq(prayerJournals.userId, req.user!.id),
+          ilike(prayerJournals.content, searchTerm)
+        ))
+        .limit(limit),
+
+        // Devotionals
+        db.select({
+          id: devotionals.id,
+          type: sql<string>`'devotional'`,
+          title: devotionals.title,
+          subtitle: devotionals.scriptureReference,
+          content: devotionals.content
+        })
+        .from(devotionals)
+        .where(and(
+          eq(devotionals.userId, req.user!.id),
+          or(
+            ilike(devotionals.title, searchTerm),
+            ilike(devotionals.content, searchTerm)
+          )
+        ))
+        .limit(limit),
+
+        // Notes
+        db.select({
+          id: syncNotes.id,
+          type: sql<string>`'note'`,
+          title: sql<string>`SUBSTRING(${syncNotes.content}, 1, 50)`,
+          subtitle: sql<string>`ARRAY_TO_STRING(${syncNotes.aiTags}, ', ')`,
+          content: syncNotes.content
+        })
+        .from(syncNotes)
+        .where(and(
+          eq(syncNotes.userId, req.user!.id),
+          ilike(syncNotes.content, searchTerm)
+        ))
+        .limit(limit),
+
+        // Spiritual Guides
+        db.select({
+          id: spiritualGuides.id,
+          type: sql<string>`'guide'`,
+          title: spiritualGuides.name,
+          subtitle: sql<string>`'AI Spiritual Guide'`,
+          content: sql<string>`NULL`
+        })
+        .from(spiritualGuides)
+        .where(
+          ilike(spiritualGuides.name, searchTerm)
+        )
+        .limit(limit),
+
+        // Videos
+        db.select({
+          id: videos.id,
+          type: sql<string>`'video'`,
+          title: videos.title,
+          subtitle: videos.channelName,
+          content: sql<string>`NULL`
+        })
+        .from(videos)
+        .where(and(
+          eq(videos.userId, req.user!.id),
+          or(
+            ilike(videos.title, searchTerm),
+            ilike(videos.channelName, searchTerm)
+          )
+        ))
+        .limit(limit),
+
+        // Songs
+        db.select({
+          id: songs.id,
+          type: sql<string>`'song'`,
+          title: songs.title,
+          subtitle: songs.artist,
+          content: sql<string>`NULL`
+        })
+        .from(songs)
+        .where(and(
+          eq(songs.userId, req.user!.id),
+          or(
+            ilike(songs.title, searchTerm),
+            ilike(songs.artist, searchTerm)
+          )
+        ))
+        .limit(limit),
+
+        // Sermons
+        db.select({
+          id: sermons.id,
+          type: sql<string>`'sermon'`,
+          title: sermons.title,
+          subtitle: sermons.churchName,
+          content: sql<string>`NULL`
+        })
+        .from(sermons)
+        .where(and(
+          eq(sermons.userId, req.user!.id),
+          or(
+            ilike(sermons.title, searchTerm),
+            ilike(sermons.churchName, searchTerm)
+          )
+        ))
+        .limit(limit),
+
+        // Resources
+        db.select({
+          id: resources.id,
+          type: sql<string>`'resource'`,
+          title: resources.title,
+          subtitle: resources.author,
+          content: resources.description
+        })
+        .from(resources)
+        .where(and(
+          eq(resources.userId, req.user!.id),
+          or(
+            ilike(resources.title, searchTerm),
+            ilike(resources.description, searchTerm),
+            ilike(resources.author, searchTerm)
+          )
+        ))
+        .limit(limit),
+
+        // Faith Circles
+        db.select({
+          id: faithCircles.id,
+          type: sql<string>`'circle'`,
+          title: faithCircles.title,
+          subtitle: sql<string>`${faithCircles.memberCount} || ' members'`,
+          content: faithCircles.description
+        })
+        .from(faithCircles)
+        .where(
+          or(
+            ilike(faithCircles.title, searchTerm),
+            ilike(faithCircles.description, searchTerm)
+          )
+        )
+        .limit(limit)
+      ]);
+
+      // Combine and structure results
+      const allResults = [
+        ...bibleResults,
+        ...prayerResults,
+        ...devotionalResults,
+        ...noteResults,
+        ...guideResults,
+        ...videoResults,
+        ...songResults,
+        ...sermonResults,
+        ...resourceResults,
+        ...circleResults
+      ];
+
+      res.json({ success: true, data: { results: allResults, query } });
+    } catch (error) {
+      console.error('Search error:', error);
+      res.status(500).json({ success: false, error: { code: 'SEARCH_ERROR', message: 'Failed to perform search' } });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
