@@ -42,6 +42,17 @@ async function autoCalculateFlourishing(userId: string) {
   pendingCalculations.set(userId, timeout);
 }
 
+// Auto-trigger Bible verse generation for note_created events
+async function autoGenerateBibleVerses(userId: string) {
+  try {
+    const { runBibleVerseEngine } = await import('./personalization');
+    await runBibleVerseEngine(userId);
+    console.log(`📖 Auto-generated Bible verse recommendation for user ${userId}`);
+  } catch (error) {
+    console.error('Failed to auto-generate Bible verses:', error);
+  }
+}
+
 export async function createEvent(
   userId: string,
   eventType: EventType,
@@ -54,6 +65,11 @@ export async function createEvent(
       eventType,
       eventData
     });
+
+    // Auto-trigger Bible verse generation for note_created events
+    if (eventType === 'note_created') {
+      await autoGenerateBibleVerses(userId);
+    }
 
     // Auto-trigger flourishing calculation after event
     if (immediate) {

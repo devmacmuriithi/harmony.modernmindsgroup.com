@@ -408,7 +408,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         aiTags: tags
       }).returning();
 
-      await createEvent(req.user!.id, 'note_created', { tags });
+      await createEvent(req.user!.id, 'note_created', { tags, content });
       
       res.json({ success: true, data: note[0] });
     } catch (error) {
