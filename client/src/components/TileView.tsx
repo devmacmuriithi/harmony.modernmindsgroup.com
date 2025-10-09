@@ -47,21 +47,21 @@ export default function TileView({ onAppClick }: TileViewProps) {
           <div className="absolute top-3 left-3 text-xs font-medium opacity-80">PRIMARY METRIC: HUMAN FLOURISHING</div>
           <div className="flex flex-col h-full justify-center">
             <div className="text-6xl font-bold mb-1">
-              {flourishing?.overallScore || 0} <span className="text-3xl opacity-80">/100</span>
+              {flourishing?.overallIndex || 0} <span className="text-3xl opacity-80">/100</span>
             </div>
             <div className="text-lg font-semibold mb-4">Flourishing Index (FI)</div>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-1">💖 Spiritual</span>
-                <span className="font-semibold">{flourishing?.spiritualScore || 0}%</span>
+                <span className="font-semibold">{flourishing?.faithScore || 0}%</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-1">🤝 Emotional</span>
-                <span className="font-semibold">{flourishing?.emotionalScore || 0}%</span>
+                <span className="font-semibold">{flourishing?.happinessScore || 0}%</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-1">👥 Relational</span>
-                <span className="font-semibold">{flourishing?.relationalScore || 0}%</span>
+                <span className="font-semibold">{flourishing?.relationshipsScore || 0}%</span>
               </div>
             </div>
             <div className="mt-3 text-xs opacity-75 italic">Tap to see personalized AI analysis</div>
