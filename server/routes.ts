@@ -257,25 +257,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ success: false, error: { code: 'INVALID_QUERY', message: 'Query parameter required' } });
       }
 
-      // Search using bible-api.com
-      const bibleResponse = await fetch(`https://bible-api.com/${encodeURIComponent(query)}?translation=kjv`);
+      // Use LLM to fetch the verse text
+      const { llmClient } = await import('./llm-client');
       
-      if (!bibleResponse.ok) {
-        return res.status(404).json({ success: false, error: { code: 'VERSE_NOT_FOUND', message: 'Verse not found' } });
-      }
+      const prompt = `Return the Bible verse for: ${query}
 
-      const bibleData = await bibleResponse.json();
+IMPORTANT: Return ONLY a JSON object with this exact structure:
+{
+  "reference": "Book Chapter:Verse",
+  "text": "The actual verse text",
+  "translation": "Translation version"
+}
+
+Example response for "John 3:16 NIV":
+{
+  "reference": "John 3:16",
+  "text": "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.",
+  "translation": "NIV"
+}
+
+Return the verse in the requested translation. If no translation specified, use NIV.`;
+
+      const llmResponse = await llmClient.chatCompletion({
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+        maxTokens: 800
+      });
       
-      // Parse the reference to extract book, chapter, verses
-      const reference = bibleData.reference || query;
-      const verseText = bibleData.text?.trim() || '';
+      // Robust JSON parsing with validation
+      let verseData;
+      try {
+        verseData = JSON.parse(llmResponse.content);
+        
+        // Validate required fields
+        if (!verseData || typeof verseData !== 'object') {
+          throw new Error('Invalid response structure');
+        }
+        
+        if (!verseData.reference || typeof verseData.reference !== 'string') {
+          throw new Error('Missing or invalid reference');
+        }
+        
+        if (!verseData.text || typeof verseData.text !== 'string') {
+          throw new Error('Missing or invalid verse text');
+        }
+        
+      } catch (parseError) {
+        console.error('LLM response parsing failed:', parseError);
+        console.error('Raw LLM response:', llmResponse.content);
+        return res.status(404).json({ 
+          success: false, 
+          error: { 
+            code: 'VERSE_NOT_FOUND', 
+            message: 'Could not retrieve verse. Please try a different reference.' 
+          } 
+        });
+      }
       
       res.json({ 
         success: true, 
         data: {
-          reference,
-          text: verseText,
-          translation: 'KJV'
+          reference: verseData.reference.trim(),
+          text: verseData.text.trim(),
+          translation: verseData.translation?.trim() || 'NIV'
         }
       });
     } catch (error) {
@@ -286,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/bible-verses/save', requireAuth, async (req, res) => {
     try {
-      const { reference, text, book, chapter, verseStart, verseEnd } = req.body;
+      const { reference, text, translation, book, chapter, verseStart, verseEnd } = req.body;
       
       if (!reference || !text) {
         return res.status(400).json({ success: false, error: { code: 'INVALID_DATA', message: 'Reference and text required' } });
@@ -325,14 +369,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Save to bible_verses table
+      // Save to bible_verses table with the correct translation
       const result = await db.insert(bibleVerses).values({
         userId: req.user!.id,
         book: parsedBook,
         chapter: parsedChapter,
         verseStart: parsedVerseStart,
         verseEnd: parsedVerseEnd,
-        translation: 'KJV',
+        translation: translation || 'NIV',
         content: text,
         notes: null
       }).returning();

@@ -6,6 +6,7 @@ import { Loader2, RefreshCw, Search, BookOpen, Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface BibleVerse {
   id: string;
@@ -26,9 +27,40 @@ interface SearchResult {
   translation: string;
 }
 
+const BIBLE_VERSIONS = [
+  { value: 'NIV', label: 'NIV' },
+  { value: 'KJV', label: 'KJV' },
+  { value: 'ESV', label: 'ESV' },
+  { value: 'NKJV', label: 'NKJV' },
+  { value: 'NLT', label: 'NLT' },
+  { value: 'NASB', label: 'NASB' },
+];
+
+const BIBLE_BOOKS = [
+  // Old Testament
+  'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
+  'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel',
+  '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles',
+  'Ezra', 'Nehemiah', 'Esther', 'Job', 'Psalms', 'Proverbs',
+  'Ecclesiastes', 'Song of Solomon', 'Isaiah', 'Jeremiah', 'Lamentations',
+  'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos',
+  'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk',
+  'Zephaniah', 'Haggai', 'Zechariah', 'Malachi',
+  // New Testament
+  'Matthew', 'Mark', 'Luke', 'John', 'Acts',
+  'Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians',
+  'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians',
+  '1 Timothy', '2 Timothy', 'Titus', 'Philemon',
+  'Hebrews', 'James', '1 Peter', '2 Peter',
+  '1 John', '2 John', '3 John', 'Jude', 'Revelation'
+];
+
 export default function BibleWindow() {
   const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [version, setVersion] = useState('NIV');
+  const [book, setBook] = useState('John');
+  const [chapter, setChapter] = useState('');
+  const [verse, setVerse] = useState('');
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -70,7 +102,8 @@ export default function BibleWindow() {
     mutationFn: async (result: SearchResult) => {
       const res = await apiRequest('POST', '/api/bible-verses/save', {
         reference: result.reference,
-        text: result.text
+        text: result.text,
+        translation: result.translation
       });
       return await res.json();
     },
@@ -78,7 +111,8 @@ export default function BibleWindow() {
       queryClient.invalidateQueries({ queryKey: ['/api/bible-verses'] });
       queryClient.invalidateQueries({ queryKey: ['/api/flourishing'] });
       setSearchResult(null);
-      setSearchQuery('');
+      setChapter('');
+      setVerse('');
       toast({ title: 'Verse saved!', description: 'Added to your Bible verses.' });
     },
     onError: () => {
@@ -88,11 +122,18 @@ export default function BibleWindow() {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
+    if (!book || !chapter) return;
+    
+    // Build search query from structured fields
+    let query = `${book} ${chapter}`;
+    if (verse) {
+      query += `:${verse}`;
+    }
+    query += ` ${version}`;
     
     setIsSearching(true);
     try {
-      await searchMutation.mutateAsync(searchQuery.trim());
+      await searchMutation.mutateAsync(query);
     } finally {
       setIsSearching(false);
     }
@@ -218,32 +259,68 @@ export default function BibleWindow() {
           <div>
             <h2 className="text-xl font-serif font-semibold text-foreground mb-2">Search Bible Verses</h2>
             <p className="text-sm text-muted-foreground">
-              Search by reference (e.g., "John 3:16" or "Psalm 23")
+              Select book, chapter, and verse to find any Bible passage
             </p>
           </div>
 
-          <form onSubmit={handleSearch} className="flex gap-2">
+          <form onSubmit={handleSearch} className="flex flex-wrap gap-2">
+            <Select value={version} onValueChange={setVersion}>
+              <SelectTrigger className="w-[100px]" data-testid="select-bible-version">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {BIBLE_VERSIONS.map((v) => (
+                  <SelectItem key={v.value} value={v.value}>
+                    {v.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={book} onValueChange={setBook}>
+              <SelectTrigger className="w-[160px]" data-testid="select-bible-book">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {BIBLE_BOOKS.map((b) => (
+                  <SelectItem key={b} value={b}>
+                    {b}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Input
+              type="number"
+              placeholder="Chapter"
+              value={chapter}
+              onChange={(e) => setChapter(e.target.value)}
+              disabled={isSearching}
+              data-testid="input-chapter"
+              className="w-[100px]"
+              min="1"
+            />
+
             <Input
               type="text"
-              placeholder="Enter verse reference..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Verse (optional)"
+              value={verse}
+              onChange={(e) => setVerse(e.target.value)}
               disabled={isSearching}
-              data-testid="input-search-verse"
-              className="flex-1"
+              data-testid="input-verse"
+              className="w-[140px]"
             />
+
             <Button 
               type="submit" 
-              disabled={isSearching || !searchQuery.trim()}
+              disabled={isSearching || !chapter}
               data-testid="button-search-verse"
+              className="bg-amber-600 hover:bg-amber-700 text-white"
             >
               {isSearching ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <>
-                  <Search className="mr-2 h-4 w-4" />
-                  Search
-                </>
+                'Go'
               )}
             </Button>
           </form>
