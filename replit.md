@@ -63,7 +63,8 @@ Preferred communication style: Simple, everyday language.
 **Schema Design** (as defined in attached specifications):
 - **Users table**: Authentication and user profiles
 - **Events table**: Central tracking table for all user activities (moods, prayers, Bible reading, etc.) using JSONB for flexible event data storage
-- **Domain-specific tables**: Moods, prayer journals, Bible reading logs, devotionals, notes, guides (AI personas), videos, songs, sermons, resources
+- **Domain-specific tables**: Moods, prayer journals, Bible reading logs, devotionals, notes, guides (AI personas), videos, songs, sermons, resources, faith circles
+- **Faith Circles tables**: faith_circles (circles), faith_circle_members (memberships), faith_circle_posts (discussions)
 - **Analytics tables**: Flourishing metrics, personalization runs, AI recommendations
 
 **Migration Strategy**: Drizzle Kit for schema migrations with PostgreSQL dialect.
@@ -170,7 +171,7 @@ Preferred communication style: Simple, everyday language.
 6. **Video Recommendations Engine**: Suggests faith-based content
 7. **Resource Recommendations Engine**: Personalized spiritual growth resources
 
-**Backend-Connected Applications**: ✅ 11 apps fully integrated and tested
+**Backend-Connected Applications**: ✅ 12 apps fully integrated and tested
 1. **Flourishing Index** (`/api/flourishing`)
    - Displays AI-generated spiritual wellness scores
    - Refresh button to regenerate personalized insights
@@ -232,6 +233,15 @@ Preferred communication style: Simple, everyday language.
     - AI-based personalized recommendations
     - Resource type categorization (book/podcast/article)
 
+12. **Faith Circles** (`/api/faith-circles`)
+    - Community forum for group discussions
+    - Create/join/leave circles with categories (Bible Study, Prayer, Fellowship, Youth, Marriage, General)
+    - Member-only posting with real-time discussion threads
+    - Search and category filtering for discovering circles
+    - Optimistic UI updates for immediate feedback
+    - Event tracking for circle_joined and circle_post events
+    - Member count and join status displayed on each circle
+
 **TileView Live Data**: ✅ Complete
 - All desktop tiles display real-time backend data
 - Flourishing Index shows actual spiritual/emotional/relational scores
@@ -240,11 +250,12 @@ Preferred communication style: Simple, everyday language.
 - Empty states guide users to generate AI content
 
 **Testing & Validation**: ✅ Complete
-- End-to-end tests passing for all 5 backend-connected apps
+- End-to-end tests passing for all 12 backend-connected apps
 - Authentication flow verified (register → login → desktop access)
 - All CRUD operations tested and working
 - API endpoints returning proper data structures
 - Loading states and error handling verified
+- Faith Circles: Circle creation, join/leave, member-only posting, search/filtering verified
 
 **Technical Implementation Details**:
 - All apps use React Query (useQuery/useMutation) for data fetching
