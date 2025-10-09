@@ -19,6 +19,7 @@ Preferred communication style: Simple, everyday language.
 **Routing**: Wouter for client-side routing.
 **Desktop Paradigm Components**: Draggable/resizable windows, dock navigation, tile-based app launcher, full-screen launchpad, and a top menu bar.
 **Typography**: Inter for UI, Crimson Text for scripture/devotional content.
+**Search System**: Multi-entity autocomplete search in top menu bar. Searches across 10 content types (Bible verses, prayers, devotionals, notes, spiritual guides, videos, songs, sermons, resources, faith circles) with grouped results by entity type, sticky section headers showing icons and counts, and click-outside-to-close functionality.
 
 ### Backend Architecture
 
