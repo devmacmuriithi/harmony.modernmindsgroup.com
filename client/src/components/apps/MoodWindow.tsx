@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, ArrowLeft } from 'lucide-react';
 
 interface Mood {
   id: string;
@@ -22,6 +23,7 @@ const moodOptions = [
 
 export default function MoodWindow() {
   const { toast } = useToast();
+  const [selectedMood, setSelectedMood] = useState<typeof moodOptions[0] | null>(null);
   const [notes, setNotes] = useState('');
 
   const { data: moodsData, isLoading } = useQuery<{ data: Mood[] }>({
@@ -35,13 +37,25 @@ export default function MoodWindow() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/moods'] });
+      setSelectedMood(null);
       setNotes('');
       toast({ title: 'Mood tracked!', description: 'Your mood has been saved.' });
     }
   });
 
-  const handleMoodClick = (type: string) => {
-    moodMutation.mutate({ moodType: type, notes });
+  const handleMoodClick = (mood: typeof moodOptions[0]) => {
+    setSelectedMood(mood);
+  };
+
+  const handleSaveMood = () => {
+    if (selectedMood) {
+      moodMutation.mutate({ moodType: selectedMood.type, notes });
+    }
+  };
+
+  const handleBack = () => {
+    setSelectedMood(null);
+    setNotes('');
   };
 
   if (isLoading) {
@@ -54,6 +68,61 @@ export default function MoodWindow() {
 
   const recentMoods = moodsData?.data?.slice(0, 3) || [];
 
+  // Step 2: Selected mood - ask why they feel this way
+  if (selectedMood) {
+    return (
+      <div className="space-y-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleBack}
+          data-testid="button-back"
+          className="mb-2"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back
+        </Button>
+
+        <div className="text-center">
+          <div className={`inline-flex p-6 rounded-2xl bg-gradient-to-br ${selectedMood.color} text-white mb-4`}>
+            <div className="text-6xl">{selectedMood.emoji}</div>
+          </div>
+          <h2 className="text-xl font-semibold text-foreground mb-2">You're feeling {selectedMood.label}</h2>
+          <p className="text-sm text-muted-foreground">Tell us more about what's on your heart...</p>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-foreground block mb-2">Why do you feel this way?</label>
+          <textarea 
+            className="w-full h-32 p-3 rounded-lg border border-input bg-background text-foreground resize-none focus:ring-2 focus:ring-ring"
+            placeholder="What's on your heart today..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            data-testid="textarea-mood-notes"
+            autoFocus
+          />
+        </div>
+
+        <Button
+          onClick={handleSaveMood}
+          disabled={moodMutation.isPending}
+          data-testid="button-save-mood"
+          className="w-full"
+        >
+          {moodMutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            'Save Mood'
+          )}
+        </Button>
+      </div>
+    );
+  }
+
+  // Step 1: Select mood
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-foreground">How are you feeling today?</h2>
@@ -61,31 +130,14 @@ export default function MoodWindow() {
         {moodOptions.map(mood => (
           <button
             key={mood.label}
-            onClick={() => handleMoodClick(mood.type)}
-            disabled={moodMutation.isPending}
+            onClick={() => handleMoodClick(mood)}
             data-testid={`button-mood-${mood.label.toLowerCase()}`}
-            className={`p-4 rounded-xl bg-gradient-to-br ${mood.color} text-white hover:-translate-y-1 transition-all duration-200 active-elevate-2 disabled:opacity-50`}
+            className={`p-4 rounded-xl bg-gradient-to-br ${mood.color} text-white hover:-translate-y-1 transition-all duration-200 active-elevate-2`}
           >
-            {moodMutation.isPending ? (
-              <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-            ) : (
-              <>
-                <div className="text-3xl mb-2">{mood.emoji}</div>
-                <div className="text-sm font-medium">{mood.label}</div>
-              </>
-            )}
+            <div className="text-3xl mb-2">{mood.emoji}</div>
+            <div className="text-sm font-medium">{mood.label}</div>
           </button>
         ))}
-      </div>
-      <div>
-        <label className="text-sm font-medium text-foreground block mb-2">Notes about your mood</label>
-        <textarea 
-          className="w-full h-20 p-3 rounded-lg border border-input bg-background text-foreground resize-none focus:ring-2 focus:ring-ring"
-          placeholder="What's on your heart today..."
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          data-testid="textarea-mood-notes"
-        />
       </div>
 
       {recentMoods.length > 0 && (

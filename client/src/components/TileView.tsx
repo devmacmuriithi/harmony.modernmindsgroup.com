@@ -172,18 +172,18 @@ export default function TileView({ onAppClick }: TileViewProps) {
           className="tile-small cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl rounded-xl p-4 bg-gradient-to-br from-orange-400 to-amber-500 text-white"
         >
           <div className="text-2xl mb-2">
-            {latestMood?.mood === 'joyful' && '😊'}
-            {latestMood?.mood === 'peaceful' && '😌'}
-            {latestMood?.mood === 'grateful' && '🙏'}
-            {latestMood?.mood === 'anxious' && '😰'}
-            {latestMood?.mood === 'sad' && '😔'}
-            {latestMood?.mood === 'overwhelmed' && '😫'}
+            {latestMood?.moodType === 'joyful' && '😊'}
+            {latestMood?.moodType === 'peaceful' && '😌'}
+            {latestMood?.moodType === 'grateful' && '🙏'}
+            {latestMood?.moodType === 'anxious' && '😰'}
+            {latestMood?.moodType === 'sad' && '😔'}
+            {latestMood?.moodType === 'angry' && '😤'}
             {!latestMood && '😊'}
           </div>
           <div className="font-semibold mb-1">Mood Tracker</div>
           {latestMood ? (
             <>
-              <div className="text-xs opacity-90 capitalize">{latestMood.mood}</div>
+              <div className="text-xs opacity-90 capitalize">{latestMood.moodType}</div>
               <div className="text-xs opacity-75 mt-1">{new Date(latestMood.createdAt).toLocaleDateString()}</div>
             </>
           ) : (
