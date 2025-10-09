@@ -17,9 +17,20 @@ interface Sermon {
 export default function SermonsWindow() {
   const { toast } = useToast();
 
-  const { data: sermonsData, isLoading } = useQuery<{ data: Sermon[] }>({
+  const { data: sermonsData, isLoading, error } = useQuery<{ data: Sermon[] }>({
     queryKey: ['/api/sermons']
   });
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full text-center p-4">
+        <div>
+          <p className="text-destructive mb-2">Failed to load sermons</p>
+          <p className="text-sm text-muted-foreground">{String(error)}</p>
+        </div>
+      </div>
+    );
+  }
 
   const generateMutation = useMutation({
     mutationFn: async () => {

@@ -21,9 +21,20 @@ export default function NotesWindow() {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
 
-  const { data: notesData, isLoading } = useQuery<{ data: Note[] }>({
+  const { data: notesData, isLoading, error } = useQuery<{ data: Note[] }>({
     queryKey: ['/api/notes']
   });
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full text-center p-4">
+        <div>
+          <p className="text-destructive mb-2">Failed to load notes</p>
+          <p className="text-sm text-muted-foreground">{String(error)}</p>
+        </div>
+      </div>
+    );
+  }
 
   const createMutation = useMutation({
     mutationFn: async (content: string) => {

@@ -16,9 +16,20 @@ interface Song {
 export default function SongsWindow() {
   const { toast } = useToast();
 
-  const { data: songsData, isLoading } = useQuery<{ data: Song[] }>({
+  const { data: songsData, isLoading, error } = useQuery<{ data: Song[] }>({
     queryKey: ['/api/songs']
   });
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full text-center p-4">
+        <div>
+          <p className="text-destructive mb-2">Failed to load songs</p>
+          <p className="text-sm text-muted-foreground">{String(error)}</p>
+        </div>
+      </div>
+    );
+  }
 
   const generateMutation = useMutation({
     mutationFn: async () => {

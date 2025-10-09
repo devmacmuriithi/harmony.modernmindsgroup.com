@@ -26,9 +26,20 @@ const getIcon = (type: string) => {
 export default function LibraryWindow() {
   const { toast } = useToast();
 
-  const { data: resourcesData, isLoading } = useQuery<{ data: Resource[] }>({
+  const { data: resourcesData, isLoading, error } = useQuery<{ data: Resource[] }>({
     queryKey: ['/api/resources']
   });
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full text-center p-4">
+        <div>
+          <p className="text-destructive mb-2">Failed to load resources</p>
+          <p className="text-sm text-muted-foreground">{String(error)}</p>
+        </div>
+      </div>
+    );
+  }
 
   const generateMutation = useMutation({
     mutationFn: async () => {

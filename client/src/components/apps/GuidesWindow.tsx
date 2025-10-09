@@ -36,20 +36,31 @@ export default function GuidesWindow() {
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [messageInput, setMessageInput] = useState('');
 
-  const { data: guidesData, isLoading: guidesLoading } = useQuery<{ data: Guide[] }>({
+  const { data: guidesData, isLoading: guidesLoading, error: guidesError } = useQuery<{ data: Guide[] }>({
     queryKey: ['/api/guides']
   });
 
+  if (guidesError) {
+    return (
+      <div className="flex items-center justify-center h-full text-center p-4">
+        <div>
+          <p className="text-destructive mb-2">Failed to load spiritual guides</p>
+          <p className="text-sm text-muted-foreground">{String(guidesError)}</p>
+        </div>
+      </div>
+    );
+  }
+
   const { data: messagesData, isLoading: messagesLoading } = useQuery<{ data: Message[] }>({
-    queryKey: ['/api/conversations', activeConversation?.id, 'messages'],
+    queryKey: activeConversation ? [`/api/conversations/${activeConversation.id}/messages`] : ['disabled'],
     enabled: !!activeConversation
   });
 
   const createConversationMutation = useMutation({
-    mutationFn: async (guideId: string) => {
+    mutationFn: async ({ guideId, guideName }: { guideId: string; guideName: string }) => {
       const res = await apiRequest('POST', '/api/conversations', { 
         guideId, 
-        title: `Chat with ${selectedGuide?.name}` 
+        title: `Chat with ${guideName}` 
       });
       return res.json();
     },
@@ -65,9 +76,11 @@ export default function GuidesWindow() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['/api/conversations', activeConversation?.id, 'messages'] 
-      });
+      if (activeConversation) {
+        queryClient.invalidateQueries({ 
+          queryKey: [`/api/conversations/${activeConversation.id}/messages`] 
+        });
+      }
       setMessageInput('');
     },
     onError: () => {
@@ -77,7 +90,7 @@ export default function GuidesWindow() {
 
   const handleGuideSelect = (guide: Guide) => {
     setSelectedGuide(guide);
-    createConversationMutation.mutate(guide.id);
+    createConversationMutation.mutate({ guideId: guide.id, guideName: guide.name });
   };
 
   const handleSendMessage = () => {

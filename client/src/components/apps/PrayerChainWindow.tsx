@@ -36,12 +36,23 @@ export default function PrayerChainWindow() {
   const [selectedChainId, setSelectedChainId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
 
-  const { data: chainsData, isLoading } = useQuery<{ data: PrayerChain[] }>({
+  const { data: chainsData, isLoading, error } = useQuery<{ data: PrayerChain[] }>({
     queryKey: ['/api/prayer-chains']
   });
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full text-center p-4">
+        <div>
+          <p className="text-destructive mb-2">Failed to load prayer chains</p>
+          <p className="text-sm text-muted-foreground">{String(error)}</p>
+        </div>
+      </div>
+    );
+  }
+
   const { data: commentsData } = useQuery<{ data: Comment[] }>({
-    queryKey: ['/api/prayer-chains', selectedChainId, 'comments'],
+    queryKey: selectedChainId ? [`/api/prayer-chains/${selectedChainId}/comments`] : ['disabled'],
     enabled: !!selectedChainId
   });
 
@@ -65,7 +76,9 @@ export default function PrayerChainWindow() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/prayer-chains', selectedChainId, 'comments'] });
+      if (selectedChainId) {
+        queryClient.invalidateQueries({ queryKey: [`/api/prayer-chains/${selectedChainId}/comments`] });
+      }
       setCommentText('');
     }
   });

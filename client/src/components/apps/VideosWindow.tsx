@@ -16,9 +16,20 @@ interface Video {
 export default function VideosWindow() {
   const { toast } = useToast();
 
-  const { data: videosData, isLoading } = useQuery<{ data: Video[] }>({
+  const { data: videosData, isLoading, error } = useQuery<{ data: Video[] }>({
     queryKey: ['/api/videos']
   });
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full text-center p-4">
+        <div>
+          <p className="text-destructive mb-2">Failed to load videos</p>
+          <p className="text-sm text-muted-foreground">{String(error)}</p>
+        </div>
+      </div>
+    );
+  }
 
   const generateMutation = useMutation({
     mutationFn: async () => {
