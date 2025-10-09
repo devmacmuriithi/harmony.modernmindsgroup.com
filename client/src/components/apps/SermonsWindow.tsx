@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, RefreshCw, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Sermon {
@@ -16,6 +18,7 @@ interface Sermon {
 
 export default function SermonsWindow() {
   const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: sermonsData, isLoading, error } = useQuery<{ data: Sermon[] }>({
     queryKey: ['/api/sermons']
@@ -53,6 +56,13 @@ export default function SermonsWindow() {
 
   const sermons = sermonsData?.data || [];
 
+  // Filter sermons by search query (title or preacher)
+  const filteredSermons = sermons.filter(sermon => 
+    !searchQuery || 
+    sermon.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    sermon.preacher.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="space-y-4 h-full flex flex-col">
       <div className="flex items-center justify-between">
@@ -73,6 +83,18 @@ export default function SermonsWindow() {
         </Button>
       </div>
 
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search sermons or preachers..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+          data-testid="input-search-sermons"
+        />
+      </div>
+
       <div className="flex-1 overflow-auto space-y-3">
         {sermons.length === 0 ? (
           <div className="text-center py-8">
@@ -81,8 +103,12 @@ export default function SermonsWindow() {
               Get Sermon Recommendations
             </Button>
           </div>
+        ) : filteredSermons.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">No sermons match your search</p>
+          </div>
         ) : (
-          sermons.map(sermon => (
+          filteredSermons.map(sermon => (
             <div
               key={sermon.id}
               className="p-4 rounded-lg border border-border bg-card hover-elevate"
