@@ -192,6 +192,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ))
         .returning();
       
+      // Track prayer answered event with details
+      if (isAnswered && prayer[0]) {
+        await createEvent(req.user!.id, 'prayer', { 
+          content: prayer[0].content,
+          is_answered: true,
+          action: 'answered'
+        });
+      }
+      
       res.json({ success: true, data: prayer[0] });
     } catch (error) {
       res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to update prayer' } });
@@ -429,6 +438,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           eq(syncNotes.userId, req.user!.id)
         ))
         .returning();
+      
+      // Track note update event with content
+      if (note[0]) {
+        await createEvent(req.user!.id, 'note_created', { 
+          tags: note[0].aiTags || [],
+          content: note[0].content,
+          action: 'updated'
+        });
+      }
       
       res.json({ success: true, data: note[0] });
     } catch (error) {

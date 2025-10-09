@@ -50,9 +50,22 @@ Preferred communication style: Simple, everyday language.
 ### Third-Party Services & APIs
 
 **Database**: Neon Postgres serverless database (`@neondatabase/serverless`).
-**AI**: Multi-model LLM system with Gemini (gemini-2.0-flash-exp) as default, OpenAI (gpt-4o-mini) as fallback. Unified via `llm-client.ts` abstraction layer. Configurable via `DEFAULT_MODEL` environment variable. Includes robust JSON sanitization for handling LLM formatting inconsistencies (markdown code fences, comma-separated objects, trailing commas).
+**AI**: Multi-model LLM system with Gemini (gemini-2.0-flash-exp) as default, OpenAI (gpt-4o-mini) as automatic fallback. Unified via `llm-client.ts` abstraction layer with automatic quota-aware fallback (switches to OpenAI when Gemini quota exceeded). Configurable via `DEFAULT_MODEL` environment variable. Includes robust JSON sanitization for handling LLM formatting inconsistencies (markdown code fences, comma-separated objects, trailing commas).
 **Bible Content**: bible-api.com for Bible verse content (KJV).
 **Video/Music Integration**: YouTube integration.
+
+### Personalization System
+
+**Real-Time Event-Driven Personalization**: Comprehensive event tracking system (`server/events.ts`) that captures detailed user activity and triggers intelligent AI personalization engines based on event type.
+
+**Event Categories**:
+- **Spiritual Events** (mood, prayer, note_created, guide_chat): Trigger all 6 personalization engines (Bible verses, devotionals, videos, songs, sermons, resources) in parallel using fire-and-forget pattern
+- **Engagement Events** (video_watched, song_listened, resource_read, bible_verse_saved): Refine specific recommendation engine
+- **Community Events** (circle_joined, circle_post): Update devotionals and resources with community context
+
+**Event Data Captured**: Full content for prayers, notes, moods; metadata for media interactions; community engagement details for circles
+
+**Performance**: Non-blocking architecture using fire-and-forget promises - API responses return immediately while personalization runs in background. Uses `Promise.allSettled` for parallel engine execution.
 
 ### UI Component Libraries
 

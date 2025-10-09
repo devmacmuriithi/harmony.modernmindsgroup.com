@@ -51,7 +51,27 @@ class LLMClient {
     if (this.model === 'openai') {
       return this.openaiChatCompletion(params);
     } else {
-      return this.geminiChatCompletion(params);
+      // Try Gemini first, fallback to OpenAI if it fails
+      try {
+        return await this.geminiChatCompletion(params);
+      } catch (error: any) {
+        // Check if it's a quota/rate limit error
+        if (error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('RESOURCE_EXHAUSTED')) {
+          console.warn('⚠️ Gemini quota exceeded, falling back to OpenAI...');
+          
+          // Initialize OpenAI if not already done
+          if (!this.openai && process.env.OPENAI_API_KEY) {
+            this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          }
+          
+          if (this.openai) {
+            return await this.openaiChatCompletion(params);
+          }
+        }
+        
+        // Re-throw if not a quota error or no fallback available
+        throw error;
+      }
     }
   }
 
