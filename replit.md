@@ -17,9 +17,10 @@ Preferred communication style: Simple, everyday language.
 **Styling Approach**: Tailwind CSS with custom configuration for a dual-theme (light/dark) system with warm, faith-inspired color palettes, a stained-glass aesthetic, and custom border radii.
 **State Management**: React Query for server state; React hooks for local UI state.
 **Routing**: Wouter for client-side routing.
-**Desktop Paradigm Components**: Draggable/resizable windows, dock navigation, tile-based app launcher, full-screen launchpad, and a top menu bar.
+**Desktop Paradigm Components**: Draggable/resizable windows, dock navigation, tile-based app launcher, full-screen launchpad, top menu bar, and right sidebar widget panel (in traditional OS-mode).
 **Typography**: Inter for UI, Crimson Text for scripture/devotional content.
 **Search System**: Multi-entity autocomplete search in top menu bar. Searches across 10 content types (Bible verses, prayers, devotionals, notes, spiritual guides, videos, songs, sermons, resources, faith circles) with grouped results by entity type, sticky section headers showing icons and counts, and click-outside-to-close functionality.
+**Right Sidebar Widgets** (Traditional OS-Mode): Contextual widget panel displaying verse of the day, journey stats (Flourishing Index, active prayers, saved verses), devotional preview, calendar, and daily spiritual reminders. Only visible in icon/traditional desktop view.
 
 ### Backend Architecture
 
