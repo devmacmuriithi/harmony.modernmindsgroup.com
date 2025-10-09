@@ -50,7 +50,7 @@ Preferred communication style: Simple, everyday language.
 ### Third-Party Services & APIs
 
 **Database**: Neon Postgres serverless database (`@neondatabase/serverless`).
-**AI**: OpenAI (gpt-4o-mini model) for AI personalization engines.
+**AI**: Multi-model LLM system with Gemini (gemini-2.0-flash-exp) as default, OpenAI (gpt-4o-mini) as fallback. Unified via `llm-client.ts` abstraction layer. Configurable via `DEFAULT_MODEL` environment variable. Includes robust JSON sanitization for handling LLM formatting inconsistencies (markdown code fences, comma-separated objects, trailing commas).
 **Bible Content**: bible-api.com for Bible verse content (KJV).
 **Video/Music Integration**: YouTube integration.
 

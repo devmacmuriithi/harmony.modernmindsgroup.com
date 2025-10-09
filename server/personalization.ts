@@ -13,6 +13,31 @@ import {
 import { desc, eq } from 'drizzle-orm';
 import { llmClient } from './llm-client';
 
+// Safe JSON parsing with error handling
+function safeJsonParse<T>(jsonString: string, context: string): T {
+  // Check if response is plain text instead of JSON
+  const trimmed = jsonString.trim();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+    console.warn(`⚠️ AI returned plain text in ${context}:`, trimmed.substring(0, 200));
+    
+    // Return empty array for list contexts, empty object otherwise
+    if (context.includes('Video') || context.includes('Song') || context.includes('Sermon') || context.includes('Resource')) {
+      console.log(`  → Returning empty array for ${context}`);
+      return [] as T;
+    } else {
+      throw new Error(`AI returned plain text instead of JSON in ${context}: ${trimmed.substring(0, 100)}`);
+    }
+  }
+  
+  try {
+    return JSON.parse(jsonString) as T;
+  } catch (error) {
+    console.error(`❌ JSON parse error in ${context}:`, error);
+    console.error(`Raw response:`, jsonString.substring(0, 500));
+    throw new Error(`Failed to parse AI response in ${context}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
 // Get events summary for AI
 async function getEventsSummary(userId: string): Promise<string> {
   const recentEvents = await db.select()
@@ -69,7 +94,7 @@ Respond with JSON only.`;
     });
 
     const aiResponse = response.content || '';
-    const verse = JSON.parse(aiResponse);
+    const verse = safeJsonParse<any>(aiResponse, 'Bible Verse Engine');
 
     // Fetch actual verse content from Bible API
     // bible-api.com only supports: KJV, WEB (default), and a few others
@@ -165,7 +190,7 @@ Respond with JSON only.`;
     });
 
     const aiResponse = response.content || '';
-    const devotional = JSON.parse(aiResponse);
+    const devotional = safeJsonParse<any>(aiResponse, 'Devotional Engine');
 
     await db.update(personalizationRuns)
       .set({ outputData: devotional, status: 'completed' })
@@ -239,7 +264,7 @@ Recommend videos about sermons, teachings, worship, testimonies, or Christian li
     });
 
     const aiResponse = response.content || '';
-    const videoList = JSON.parse(aiResponse);
+    const videoList = safeJsonParse<any[]>(aiResponse, 'Video Engine');
 
     await db.update(personalizationRuns)
       .set({ outputData: videoList, status: 'completed' })
@@ -313,7 +338,7 @@ Respond with JSON only.`;
     });
 
     const aiResponse = response.content || '';
-    const songList = JSON.parse(aiResponse);
+    const songList = safeJsonParse<any[]>(aiResponse, 'Song Engine');
 
     await db.update(personalizationRuns)
       .set({ outputData: songList, status: 'completed' })
@@ -387,7 +412,7 @@ Generate AI-powered sermon recommendations that will encourage spiritual growth.
     });
 
     const aiResponse = response.content || '';
-    const sermonList = JSON.parse(aiResponse);
+    const sermonList = safeJsonParse<any[]>(aiResponse, 'Sermon Engine');
 
     await db.update(personalizationRuns)
       .set({ outputData: sermonList, status: 'completed' })
@@ -464,7 +489,7 @@ Provide diverse resource types. Include reputable Christian publishers, ministri
     });
 
     const aiResponse = response.content || '';
-    const resourceList = JSON.parse(aiResponse);
+    const resourceList = safeJsonParse<any[]>(aiResponse, 'Resource Engine');
 
     await db.update(personalizationRuns)
       .set({ outputData: resourceList, status: 'completed' })
@@ -553,7 +578,7 @@ Respond with JSON only.`;
     });
 
     const aiResponse = response.content || '';
-    const scores = JSON.parse(aiResponse);
+    const scores = safeJsonParse<any>(aiResponse, 'Flourishing Engine');
 
     await db.update(personalizationRuns)
       .set({ outputData: scores, status: 'completed' })

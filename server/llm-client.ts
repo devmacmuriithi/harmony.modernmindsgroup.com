@@ -97,9 +97,121 @@ class LLMClient {
       contents: userPrompt
     });
 
+    // Sanitize response: strip markdown code fences that LLMs often add
+    let content = response.text || '';
+    const originalContent = content;
+    content = this.sanitizeJsonResponse(content);
+    
+    // Log sanitization for debugging
+    if (originalContent !== content) {
+      console.log('🧹 Sanitized Gemini response');
+      console.log('  Original length:', originalContent.length);
+      console.log('  Sanitized length:', content.length);
+      console.log('  First 200 chars:', content.substring(0, 200));
+    }
+
     return {
-      content: response.text || ''
+      content
     };
+  }
+
+  // Remove markdown code fences and other formatting from JSON responses
+  private sanitizeJsonResponse(text: string): string {
+    let sanitized = text.trim();
+    
+    // Step 1: Remove all markdown code fences
+    sanitized = sanitized.replace(/^```(?:json|javascript)?\s*/gi, '');
+    sanitized = sanitized.replace(/```\s*$/g, '');
+    sanitized = sanitized.replace(/```(?:json|javascript)?\s*/gi, '');
+    sanitized = sanitized.replace(/```/g, '');
+    sanitized = sanitized.trim();
+    
+    // Step 2: Collect ALL top-level JSON entities
+    const entities: string[] = [];
+    let i = 0;
+    
+    while (i < sanitized.length) {
+      // Skip whitespace
+      while (i < sanitized.length && /\s/.test(sanitized[i])) {
+        i++;
+      }
+      
+      if (i >= sanitized.length) break;
+      
+      // Check if we're at the start of a JSON entity
+      if (sanitized[i] !== '[' && sanitized[i] !== '{') {
+        // Not JSON, skip this character
+        i++;
+        continue;
+      }
+      
+      const startChar = sanitized[i];
+      let depth = 0;
+      let jsonEnd = -1;
+      let inString = false;
+      let escapeNext = false;
+      
+      // Find the matching closing bracket/brace
+      for (let j = i; j < sanitized.length; j++) {
+        const char = sanitized[j];
+        
+        if (escapeNext) {
+          escapeNext = false;
+          continue;
+        }
+        
+        if (char === '\\') {
+          escapeNext = true;
+          continue;
+        }
+        
+        if (char === '"') {
+          inString = !inString;
+          continue;
+        }
+        
+        if (inString) continue;
+        
+        if (char === '[' || char === '{') {
+          depth++;
+        } else if (char === ']' || char === '}') {
+          depth--;
+          if (depth === 0) {
+            jsonEnd = j;
+            break;
+          }
+        }
+      }
+      
+      if (jsonEnd > i) {
+        // Extract this JSON entity
+        entities.push(sanitized.substring(i, jsonEnd + 1));
+        i = jsonEnd + 1;
+        
+        // Skip comma if present
+        while (i < sanitized.length && /[\s,]/.test(sanitized[i])) {
+          i++;
+        }
+      } else {
+        // Couldn't find matching brace, skip
+        i++;
+      }
+    }
+    
+    // Step 3: Combine entities
+    if (entities.length === 0) {
+      return sanitized; // No valid JSON found
+    } else if (entities.length === 1) {
+      sanitized = entities[0];
+    } else {
+      // Multiple entities: wrap in array
+      sanitized = '[' + entities.join(', ') + ']';
+    }
+    
+    // Step 4: Remove trailing commas
+    sanitized = sanitized.replace(/,\s*([}\]])/g, '$1');
+    
+    return sanitized.trim();
   }
 
   getModelName(): string {
