@@ -146,7 +146,24 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### Backend Integration Completion (Latest)
+### AI Insights & Sermon Enhancements (Latest - October 2025)
+
+**Flourishing Index AI Insights**: ✅ Complete
+- Added `aiInsight` TEXT field to flourishing_scores table
+- Enhanced Flourishing Engine to generate personalized, actionable AI insights
+- AI insights analyze user's scores and suggest specific Harmony apps for improvement
+- Insights displayed prominently on Flourishing tile with "💡 AI Insight" header
+- Example insight: "Your 'Faith' score is slightly lower this week. Consider spending more time in the Prayer Journal or reading Scripture."
+- Insight guidelines: Personal, actionable, under 120 characters, app-specific recommendations
+
+**Sermon Personalization Updates**: ✅ Complete
+- Removed `pastor` field from sermons schema (sermons are fully AI-generated)
+- Updated Sermon Engine prompt to reflect AI-generated sermon recommendations
+- Enhanced UI to display church name and duration instead of pastor information
+- Sermon items now clickable links to watch on YouTube
+- Search functionality updated to filter by title and church name
+
+### Backend Integration Completion
 
 **Authentication & Backend Infrastructure**: ✅ Complete
 - Implemented full authentication flow with bcrypt password hashing
@@ -174,6 +191,7 @@ Preferred communication style: Simple, everyday language.
 **Backend-Connected Applications**: ✅ 12 apps fully integrated and tested
 1. **Flourishing Index** (`/api/flourishing`)
    - Displays AI-generated spiritual wellness scores
+   - **AI Insight feature**: Personalized, actionable tips displayed on tile and in window
    - Refresh button to regenerate personalized insights
    - Shows spiritual, emotional, relational metrics
 
