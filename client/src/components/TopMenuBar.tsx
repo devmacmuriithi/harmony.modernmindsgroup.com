@@ -54,7 +54,9 @@ export default function TopMenuBar({ viewMode, onViewModeToggle }: TopMenuBarPro
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     // Ensure theme is applied on mount
@@ -66,6 +68,9 @@ export default function TopMenuBar({ viewMode, onViewModeToggle }: TopMenuBarPro
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setIsSearchFocused(false);
       }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+        setIsNotificationsOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -76,6 +81,19 @@ export default function TopMenuBar({ viewMode, onViewModeToggle }: TopMenuBarPro
     enabled: searchQuery.length >= 2
   });
 
+  // Fetch recent activity for notifications
+  const { data: devotionalsData } = useQuery<{ data: any[] }>({
+    queryKey: ['/api/devotionals']
+  });
+  
+  const { data: prayersData } = useQuery<{ data: any[] }>({
+    queryKey: ['/api/prayers']
+  });
+  
+  const { data: videosData } = useQuery<{ data: any[] }>({
+    queryKey: ['/api/videos']
+  });
+
   // Group results by entity type
   const groupedResults = searchResults?.data?.results.reduce((acc, result) => {
     if (!acc[result.type]) {
@@ -84,6 +102,34 @@ export default function TopMenuBar({ viewMode, onViewModeToggle }: TopMenuBarPro
     acc[result.type].push(result);
     return acc;
   }, {} as Record<string, SearchResult[]>) || {};
+
+  // Create notifications from recent activity
+  const notifications = [
+    ...(devotionalsData?.data?.slice(0, 1).map(d => ({
+      id: d.id,
+      type: 'devotional',
+      title: 'New Devotional Available',
+      message: d.title,
+      time: 'Just now',
+      icon: '✨'
+    })) || []),
+    ...(prayersData?.data?.filter(p => p.isAnswered).slice(0, 2).map(p => ({
+      id: p.id,
+      type: 'prayer',
+      title: 'Prayer Answered',
+      message: p.content.substring(0, 50) + '...',
+      time: 'Recently',
+      icon: '🙏'
+    })) || []),
+    ...(videosData?.data?.slice(0, 2).map(v => ({
+      id: v.id,
+      type: 'video',
+      title: 'New Video Recommendation',
+      message: v.title,
+      time: 'Today',
+      icon: '📺'
+    })) || [])
+  ];
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -199,13 +245,58 @@ export default function TopMenuBar({ viewMode, onViewModeToggle }: TopMenuBarPro
               <RefreshCw className={`h-6 w-6 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
 
-            <button 
-              className="relative p-2 rounded-full text-amber-700 dark:text-amber-400 hover-elevate active-elevate-2 transition-colors"
-              data-testid="button-notifications"
-            >
-              <Bell className="h-6 w-6" />
-              <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-            </button>
+            <div ref={notificationsRef} className="relative">
+              <button 
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                className="relative p-2 rounded-full text-amber-700 dark:text-amber-400 hover-elevate active-elevate-2 transition-colors"
+                data-testid="button-notifications"
+              >
+                <Bell className="h-6 w-6" />
+                {notifications.length > 0 && (
+                  <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+                )}
+              </button>
+
+              {/* Notifications Dropdown */}
+              {isNotificationsOpen && (
+                <div className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 rounded-lg shadow-lg max-h-96 overflow-y-auto z-50">
+                  <div className="p-3 border-b border-amber-200 dark:border-amber-800">
+                    <h3 className="font-semibold text-sm text-foreground">Notifications</h3>
+                  </div>
+                  
+                  {notifications.length > 0 ? (
+                    <div>
+                      {notifications.map((notification) => (
+                        <button
+                          key={notification.id}
+                          data-testid={`notification-${notification.type}-${notification.id}`}
+                          className="w-full flex items-start gap-3 px-4 py-3 hover-elevate active-elevate-2 border-b border-amber-100 dark:border-amber-900 last:border-0 text-left transition-colors"
+                          onClick={() => setIsNotificationsOpen(false)}
+                        >
+                          <div className="text-2xl flex-shrink-0">{notification.icon}</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground">
+                              {notification.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                              {notification.time}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center">
+                      <Bell className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                      <p className="text-sm text-muted-foreground">No new notifications</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             
             <button 
               onClick={toggleTheme}
