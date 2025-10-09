@@ -1,6 +1,7 @@
-import { Bell, Sun, Moon } from 'lucide-react';
+import { Bell, Sun, Moon, RefreshCw } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { queryClient } from '@/lib/queryClient';
 
 interface TopMenuBarProps {
   viewMode: 'tiles' | 'icons';
@@ -9,10 +10,23 @@ interface TopMenuBarProps {
 
 export default function TopMenuBar({ viewMode, onViewModeToggle }: TopMenuBarProps) {
   const { theme, toggleTheme } = useTheme();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   useEffect(() => {
     // Ensure theme is applied on mount
   }, [theme]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    
+    // Invalidate all queries to refresh all data
+    await queryClient.invalidateQueries();
+    
+    // Keep spinning for at least 500ms for visual feedback
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 500);
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-[100] h-14 border-b border-amber-900/20 dark:border-amber-200/20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm">
@@ -50,6 +64,15 @@ export default function TopMenuBar({ viewMode, onViewModeToggle }: TopMenuBarPro
               />
               <span className="absolute cursor-pointer inset-0 bg-gray-300 transition-all duration-400 rounded-full before:absolute before:content-[''] before:h-5 before:w-5 before:left-1 before:bottom-1 before:bg-white before:transition-all before:duration-400 before:rounded-full peer-checked:bg-[#c9a961] peer-checked:before:translate-x-[22px]" />
             </label>
+
+            <button 
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-2 rounded-full text-amber-700 dark:text-amber-400 hover-elevate active-elevate-2 transition-colors disabled:opacity-50"
+              data-testid="button-refresh"
+            >
+              <RefreshCw className={`h-6 w-6 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
 
             <button 
               className="relative p-2 rounded-full text-amber-700 dark:text-amber-400 hover-elevate active-elevate-2 transition-colors"
