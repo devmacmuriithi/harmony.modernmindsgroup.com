@@ -334,7 +334,7 @@ export async function runSermonEngine(userId: string) {
   const runId = run[0].id;
 
   try {
-    const systemPrompt = `You are a sermon curator. Based on user's spiritual needs, recommend 3 relevant sermons.
+    const systemPrompt = `You are an AI sermon curator. Based on user's spiritual needs, recommend 3 relevant sermon topics.
 
 CRITICAL RULES:
 1. Return ONLY valid JSON array. NO explanatory text before or after.
@@ -344,7 +344,6 @@ CRITICAL RULES:
     "youtube_id": "dQw4w9WgXcQ",
     "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     "title": "Sermon title",
-    "pastor": "Pastor name",
     "church_name": "Church name",
     "duration": "45:30",
     "thumbnail_url": "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg"
@@ -354,7 +353,7 @@ CRITICAL RULES:
 User's recent activities:
 ${eventsSummary}
 
-Respond with JSON only.`;
+Generate AI-powered sermon recommendations that will encourage spiritual growth. Respond with JSON only.`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -380,7 +379,6 @@ Respond with JSON only.`;
         youtubeId: sermon.youtube_id,
         youtubeUrl: sermon.youtube_url,
         title: sermon.title,
-        pastor: sermon.pastor,
         churchName: sermon.church_name,
         duration: sermon.duration,
         thumbnailUrl: sermon.thumbnail_url,
@@ -490,7 +488,7 @@ export async function runFlourishingEngine(userId: string) {
   const runId = run[0].id;
 
   try {
-    const systemPrompt = `You are a human flourishing analyst. Based on user's recent activities, assign scores (0-100) for each flourishing dimension.
+    const systemPrompt = `You are a human flourishing analyst. Based on user's recent activities, assign scores (0-100) for each flourishing dimension and provide an actionable AI insight.
 
 CRITICAL RULES:
 1. Return ONLY valid JSON. NO explanatory text before or after.
@@ -504,7 +502,7 @@ CRITICAL RULES:
   "character_score": 79,
   "faith_score": 84,
   "overall_index": 78,
-  "insights": "Brief observation about their flourishing state"
+  "ai_insight": "Your 'Faith' score is slightly lower this week. Consider spending more time in the Prayer Journal or reading Scripture."
 }
 
 Scoring guidelines:
@@ -512,6 +510,12 @@ Scoring guidelines:
 - 60-79: Stable
 - 40-59: Struggling
 - 0-39: Crisis
+
+AI Insight guidelines:
+- Make it personal and actionable
+- Reference specific scores that need attention
+- Suggest specific Harmony apps to use (Prayer Journal, Bible, Devotional, Spiritual Guides, Mood Tracker, etc.)
+- Keep it under 120 characters for tile display
 
 User's recent activities:
 ${eventsSummary}
@@ -545,10 +549,11 @@ Respond with JSON only.`;
       characterScore: scores.character_score,
       faithScore: scores.faith_score,
       overallIndex: scores.overall_index,
+      aiInsight: scores.ai_insight,
       personalizationRunId: runId
     }).returning();
 
-    return { success: true, scores: result[0], insights: scores.insights };
+    return { success: true, scores: result[0] };
   } catch (error) {
     await db.update(personalizationRuns)
       .set({ status: 'failed' })

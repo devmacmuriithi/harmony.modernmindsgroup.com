@@ -65,7 +65,15 @@ export default function TileView({ onAppClick }: TileViewProps) {
                 <span className="font-semibold">{flourishing?.relationshipsScore || 0}%</span>
               </div>
             </div>
-            <div className="mt-3 text-xs opacity-75 italic">Tap to see personalized AI analysis</div>
+            {flourishing?.aiInsight && (
+              <div className="mt-3 pt-3 border-t border-white/20">
+                <div className="text-xs font-semibold mb-1 opacity-90">💡 AI Insight</div>
+                <div className="text-xs opacity-80 leading-relaxed">{flourishing.aiInsight}</div>
+              </div>
+            )}
+            {!flourishing?.aiInsight && (
+              <div className="mt-3 text-xs opacity-75 italic">Tap to see personalized AI analysis</div>
+            )}
           </div>
         </button>
 

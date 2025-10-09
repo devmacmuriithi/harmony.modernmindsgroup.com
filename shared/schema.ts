@@ -161,7 +161,6 @@ export const sermons = pgTable("sermons", {
   youtubeId: varchar("youtube_id", { length: 50 }).notNull(),
   youtubeUrl: text("youtube_url").notNull(),
   title: varchar("title", { length: 255 }).notNull(),
-  pastor: varchar("pastor", { length: 255 }),
   churchName: varchar("church_name", { length: 255 }),
   duration: varchar("duration", { length: 20 }),
   thumbnailUrl: text("thumbnail_url"),
@@ -197,6 +196,7 @@ export const flourishingScores = pgTable("flourishing_scores", {
   characterScore: integer("character_score"),
   faithScore: integer("faith_score"),
   overallIndex: integer("overall_index"),
+  aiInsight: text("ai_insight"),
   personalizationRunId: uuid("personalization_run_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });

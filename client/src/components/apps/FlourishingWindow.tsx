@@ -15,7 +15,7 @@ interface FlourishingScore {
   happinessScore: number;
   characterScore: number;
   faithScore: number;
-  insights: string;
+  aiInsight: string;
   createdAt: string;
 }
 
@@ -134,10 +134,10 @@ export default function FlourishingWindow() {
         ))}
       </div>
 
-      {score.insights && (
+      {score.aiInsight && (
         <div className="pt-4 border-t border-border">
-          <h3 className="text-sm font-semibold text-foreground mb-2">AI Insights</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-insights">{score.insights}</p>
+          <h3 className="text-sm font-semibold text-foreground mb-2">💡 AI Insight</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-ai-insight">{score.aiInsight}</p>
         </div>
       )}
     </div>

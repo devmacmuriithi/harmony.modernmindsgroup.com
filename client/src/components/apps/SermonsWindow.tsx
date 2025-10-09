@@ -9,10 +9,12 @@ import { useToast } from '@/hooks/use-toast';
 interface Sermon {
   id: string;
   userId: string;
+  youtubeId: string;
+  youtubeUrl: string;
   title: string;
-  preacher: string;
-  date: string;
-  notes: string | null;
+  churchName: string | null;
+  duration: string | null;
+  thumbnailUrl: string | null;
   createdAt: string;
 }
 
@@ -56,11 +58,11 @@ export default function SermonsWindow() {
 
   const sermons = sermonsData?.data || [];
 
-  // Filter sermons by search query (title or preacher)
+  // Filter sermons by search query (title or church name)
   const filteredSermons = sermons.filter(sermon => 
     !searchQuery || 
     sermon.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (sermon.preacher ?? '').toLowerCase().includes(searchQuery.toLowerCase())
+    (sermon.churchName ?? '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -87,7 +89,7 @@ export default function SermonsWindow() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search sermons or preachers..."
+          placeholder="Search sermons or churches..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-9"
@@ -109,20 +111,23 @@ export default function SermonsWindow() {
           </div>
         ) : (
           filteredSermons.map(sermon => (
-            <div
+            <a
               key={sermon.id}
-              className="p-4 rounded-lg border border-border bg-card hover-elevate"
+              href={sermon.youtubeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block p-4 rounded-lg border border-border bg-card hover-elevate"
               data-testid={`sermon-item-${sermon.id}`}
             >
               <h3 className="font-semibold text-foreground mb-1">{sermon.title}</h3>
               <div className="flex justify-between items-center text-sm text-muted-foreground mb-2">
-                <span>{sermon.preacher}</span>
-                <span>{new Date(sermon.date).toLocaleDateString()}</span>
+                <span>{sermon.churchName || 'AI-Generated Recommendation'}</span>
+                {sermon.duration && <span>⏱️ {sermon.duration}</span>}
               </div>
-              {sermon.notes && (
-                <p className="text-sm text-muted-foreground mt-2 italic">"{sermon.notes}"</p>
-              )}
-            </div>
+              <div className="text-xs text-muted-foreground">
+                🎬 Click to watch on YouTube
+              </div>
+            </a>
           ))
         )}
       </div>
