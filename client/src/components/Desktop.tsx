@@ -27,6 +27,7 @@ import FlourishingWindow from './apps/FlourishingWindow';
 import CalendarWindow from './apps/CalendarWindow';
 import SettingsWindow from './apps/SettingsWindow';
 import FaithCirclesWindow from './apps/FaithCirclesWindow';
+import FinancialStewardshipWindow from './apps/FinancialStewardshipWindow';
 
 const appComponents: Record<string, { component: React.ReactNode; title: string; icon: string }> = {
   bible: { component: <BibleWindow />, title: 'Bible', icon: '📖' },
@@ -42,6 +43,7 @@ const appComponents: Record<string, { component: React.ReactNode; title: string;
   sermons: { component: <SermonsWindow />, title: 'Sermons', icon: '🎤' },
   library: { component: <LibraryWindow />, title: 'Library', icon: '📚' },
   flourishing: { component: <FlourishingWindow />, title: 'Flourishing Index', icon: '📊' },
+  'financial-stewardship': { component: <FinancialStewardshipWindow />, title: 'Financial Stewardship', icon: '💰' },
   calendar: { component: <CalendarWindow />, title: 'Calendar', icon: '📅' },
   settings: { component: <SettingsWindow />, title: 'Settings', icon: '⚙️' },
 };

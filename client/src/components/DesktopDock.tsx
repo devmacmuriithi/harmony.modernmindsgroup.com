@@ -1,4 +1,4 @@
-import { Book, Heart, MessageSquare, Smile, Users, FileText, Radio, Music, Video, BookOpen, BarChart3, Calendar, Settings, Grid3x3 } from 'lucide-react';
+import { Book, Heart, MessageSquare, Smile, Users, FileText, Radio, Music, Video, BookOpen, BarChart3, Calendar, Settings, Grid3x3, DollarSign } from 'lucide-react';
 
 export interface AppConfig {
   id: string;
@@ -20,6 +20,7 @@ export const apps: AppConfig[] = [
   { id: 'sermons', name: 'Sermons', icon: <BookOpen className="w-8 h-8" />, color: 'from-teal-500 to-cyan-600' },
   { id: 'library', name: 'Library', icon: <BookOpen className="w-8 h-8" />, color: 'from-violet-500 to-purple-600' },
   { id: 'flourishing', name: 'Flourishing', icon: <BarChart3 className="w-8 h-8" />, color: 'from-emerald-500 to-green-600' },
+  { id: 'financial-stewardship', name: 'Financial Stewardship', icon: <DollarSign className="w-8 h-8" />, color: 'from-green-600 to-emerald-700' },
   { id: 'calendar', name: 'Calendar', icon: <Calendar className="w-8 h-8" />, color: 'from-sky-500 to-blue-600' },
   { id: 'settings', name: 'Settings', icon: <Settings className="w-8 h-8" />, color: 'from-stone-500 to-gray-600' },
 ];
