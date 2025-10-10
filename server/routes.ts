@@ -1222,6 +1222,141 @@ Return the verse in the requested translation. If no translation specified, use 
     }
   });
   
+  // Get tithes
+  app.get('/api/financial/tithes', requireAuth, async (req, res) => {
+    try {
+      const tithes = await db.select()
+        .from(financialTransactions)
+        .where(and(
+          eq(financialTransactions.userId, req.user!.id),
+          eq(financialTransactions.transactionType, 'tithe')
+        ))
+        .orderBy(desc(financialTransactions.createdAt));
+      
+      res.json({ success: true, tithes });
+    } catch (error) {
+      console.error('Tithes fetch error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to fetch tithes' } });
+    }
+  });
+  
+  // Create tithe
+  app.post('/api/financial/tithe', requireAuth, async (req, res) => {
+    try {
+      const tithe = await db.insert(financialTransactions)
+        .values({
+          userId: req.user!.id,
+          transactionType: 'tithe',
+          amount: req.body.amount.toString(),
+          date: req.body.date,
+          notes: req.body.notes || null,
+          category: 'tithe'
+        })
+        .returning();
+      
+      await createEvent(req.user!.id, 'tithe', {
+        amount: req.body.amount
+      });
+      
+      res.json({ success: true, data: tithe[0] });
+    } catch (error) {
+      console.error('Tithe creation error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to create tithe' } });
+    }
+  });
+
+  // Get generosity acts
+  app.get('/api/financial/generosity', requireAuth, async (req, res) => {
+    try {
+      const acts = await db.select()
+        .from(financialTransactions)
+        .where(and(
+          eq(financialTransactions.userId, req.user!.id),
+          eq(financialTransactions.transactionType, 'generosity')
+        ))
+        .orderBy(desc(financialTransactions.createdAt));
+      
+      res.json({ success: true, acts });
+    } catch (error) {
+      console.error('Generosity fetch error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to fetch generosity acts' } });
+    }
+  });
+  
+  // Create generosity act
+  app.post('/api/financial/generosity', requireAuth, async (req, res) => {
+    try {
+      const act = await db.insert(financialTransactions)
+        .values({
+          userId: req.user!.id,
+          transactionType: 'generosity',
+          amount: req.body.amount.toString(),
+          date: new Date().toISOString().split('T')[0],
+          notes: req.body.notes || null,
+          category: req.body.category,
+          recipient: req.body.recipient
+        })
+        .returning();
+      
+      await createEvent(req.user!.id, 'generosity', {
+        amount: req.body.amount,
+        recipient: req.body.recipient
+      });
+      
+      res.json({ success: true, data: act[0] });
+    } catch (error) {
+      console.error('Generosity creation error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to create generosity act' } });
+    }
+  });
+
+  // Get debts (liabilities)
+  app.get('/api/financial/debts', requireAuth, async (req, res) => {
+    try {
+      const debts = await db.select()
+        .from(financialTransactions)
+        .where(and(
+          eq(financialTransactions.userId, req.user!.id),
+          eq(financialTransactions.transactionType, 'debt')
+        ))
+        .orderBy(desc(financialTransactions.createdAt));
+      
+      res.json({ success: true, debts });
+    } catch (error) {
+      console.error('Debts fetch error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to fetch debts' } });
+    }
+  });
+  
+  // Create debt account
+  app.post('/api/financial/debt', requireAuth, async (req, res) => {
+    try {
+      const debt = await db.insert(financialTransactions)
+        .values({
+          userId: req.user!.id,
+          transactionType: 'debt',
+          amount: req.body.currentBalance.toString(),
+          date: new Date().toISOString().split('T')[0],
+          notes: null,
+          category: 'debt',
+          debtName: req.body.debtName,
+          totalAmount: req.body.totalAmount.toString(),
+          currentBalance: req.body.currentBalance.toString()
+        })
+        .returning();
+      
+      await createEvent(req.user!.id, 'debt_payment', {
+        debt_name: req.body.debtName,
+        balance: req.body.currentBalance
+      });
+      
+      res.json({ success: true, data: debt[0] });
+    } catch (error) {
+      console.error('Debt creation error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to create debt account' } });
+    }
+  });
+  
   // Get all transactions
   app.get('/api/financial/transactions', requireAuth, async (req, res) => {
     try {
@@ -1331,7 +1466,32 @@ Return the verse in the requested translation. If no translation specified, use 
     }
   });
   
-  // Create financial goal
+  // Create financial goal (singular)
+  app.post('/api/financial/goal', requireAuth, async (req, res) => {
+    try {
+      const goal = await db.insert(financialGoals)
+        .values({
+          userId: req.user!.id,
+          title: req.body.goalName,
+          goalType: 'general', // Default goal type
+          targetAmount: req.body.targetAmount.toString(),
+          deadline: new Date(req.body.targetDate)
+        })
+        .returning();
+      
+      await createEvent(req.user!.id, 'financial_goal_set', {
+        goal_name: req.body.goalName,
+        target_amount: req.body.targetAmount
+      });
+      
+      res.json({ success: true, data: goal[0] });
+    } catch (error) {
+      console.error('Goal creation error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to create goal' } });
+    }
+  });
+  
+  // Create financial goal (plural - legacy)
   app.post('/api/financial/goals', requireAuth, async (req, res) => {
     try {
       const validatedData = insertFinancialGoalSchema.parse({
@@ -1386,7 +1546,29 @@ Return the verse in the requested translation. If no translation specified, use 
     }
   });
   
-  // Create stewardship reflection
+  // Create stewardship reflection (singular)
+  app.post('/api/financial/reflection', requireAuth, async (req, res) => {
+    try {
+      const reflection = await db.insert(stewardshipReflections)
+        .values({
+          userId: req.user!.id,
+          content: req.body.reflection,
+          reflectionType: 'general' // Default reflection type
+        })
+        .returning();
+      
+      await createEvent(req.user!.id, 'stewardship_reflection', {
+        reflection: req.body.reflection
+      });
+      
+      res.json({ success: true, data: reflection[0] });
+    } catch (error) {
+      console.error('Reflection creation error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to create reflection' } });
+    }
+  });
+  
+  // Create stewardship reflection (plural - legacy)
   app.post('/api/financial/reflections', requireAuth, async (req, res) => {
     try {
       const validatedData = insertStewardshipReflectionSchema.parse({

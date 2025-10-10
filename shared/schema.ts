@@ -260,6 +260,11 @@ export const financialTransactions = pgTable("financial_transactions", {
   spiritualTag: varchar("spiritual_tag", { length: 100 }), // mission, blessing, stewardship
   purpose: text("purpose"),
   notes: text("notes"),
+  date: varchar("date", { length: 20 }), // Transaction date (YYYY-MM-DD format)
+  recipient: varchar("recipient", { length: 200 }), // Recipient for generosity acts
+  debtName: varchar("debt_name", { length: 200 }), // Name of debt account
+  totalAmount: varchar("total_amount", { length: 20 }), // Original debt amount
+  currentBalance: varchar("current_balance", { length: 20 }), // Current debt balance
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   userTypeIdx: index("idx_transactions_user_type").on(table.userId, table.transactionType),
