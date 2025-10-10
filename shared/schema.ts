@@ -249,6 +249,74 @@ export const faithCirclePosts = pgTable("faith_circle_posts", {
   circlePostsIdx: index("idx_circle_posts").on(table.circleId, table.createdAt),
 }));
 
+// Financial Tables
+// Transactions Table (All financial activities)
+export const financialTransactions = pgTable("financial_transactions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  transactionType: varchar("transaction_type", { length: 50 }).notNull(), // tithe, generosity, debt_payment, income, expense
+  amount: varchar("amount", { length: 20 }).notNull(), // Stored as string to avoid decimal precision issues
+  category: varchar("category", { length: 100 }), // groceries, rent, mission, offering
+  spiritualTag: varchar("spiritual_tag", { length: 100 }), // mission, blessing, stewardship
+  purpose: text("purpose"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userTypeIdx: index("idx_transactions_user_type").on(table.userId, table.transactionType),
+}));
+
+// Generosity Commitments Table
+export const generosityCommitments = pgTable("generosity_commitments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  goal: text("goal").notNull(), // Description of the commitment
+  targetAmount: varchar("target_amount", { length: 20 }), // Optional financial target
+  currentAmount: varchar("current_amount", { length: 20 }).default("0"),
+  frequency: varchar("frequency", { length: 50 }), // weekly, monthly, one-time
+  status: varchar("status", { length: 20 }).default("active"), // active, completed, cancelled
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Financial Goals Table
+export const financialGoals = pgTable("financial_goals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  goalType: varchar("goal_type", { length: 50 }).notNull(), // debt_free, emergency_fund, tithing_increase, sabbath_margin
+  description: text("description"),
+  targetAmount: varchar("target_amount", { length: 20 }),
+  currentProgress: integer("current_progress").default(0), // Percentage 0-100
+  spiritualPurpose: text("spiritual_purpose"), // Why this matters for faith
+  deadline: timestamp("deadline"),
+  isCompleted: boolean("is_completed").default(false),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Stewardship Reflections Table (Prayer/journaling about finances)
+export const stewardshipReflections = pgTable("stewardship_reflections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  content: text("content").notNull(),
+  reflectionType: varchar("reflection_type", { length: 50 }).notNull(), // gratitude, concern, discernment, commitment
+  relatedTransactionId: uuid("related_transaction_id").references(() => financialTransactions.id, { onDelete: "set null" }),
+  aiInsight: text("ai_insight"), // AI-generated spiritual guidance
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Budget Categories Table
+export const budgetCategories = pgTable("budget_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  plannedAmount: varchar("planned_amount", { length: 20 }).notNull(),
+  categoryType: varchar("category_type", { length: 50 }).notNull(), // income, tithe, expense, savings
+  spiritualAlignment: text("spiritual_alignment"), // How this aligns with faith values
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert Schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true });
@@ -270,6 +338,11 @@ export const insertPersonalizationRunSchema = createInsertSchema(personalization
 export const insertFaithCircleSchema = createInsertSchema(faithCircles).omit({ id: true, createdAt: true, updatedAt: true, memberCount: true });
 export const insertFaithCircleMemberSchema = createInsertSchema(faithCircleMembers).omit({ id: true, joinedAt: true });
 export const insertFaithCirclePostSchema = createInsertSchema(faithCirclePosts).omit({ id: true, createdAt: true });
+export const insertFinancialTransactionSchema = createInsertSchema(financialTransactions).omit({ id: true, createdAt: true });
+export const insertGenerosityCommitmentSchema = createInsertSchema(generosityCommitments).omit({ id: true, createdAt: true, completedAt: true });
+export const insertFinancialGoalSchema = createInsertSchema(financialGoals).omit({ id: true, createdAt: true, completedAt: true });
+export const insertStewardshipReflectionSchema = createInsertSchema(stewardshipReflections).omit({ id: true, createdAt: true });
+export const insertBudgetCategorySchema = createInsertSchema(budgetCategories).omit({ id: true, createdAt: true });
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -333,3 +406,18 @@ export type FaithCircleMember = typeof faithCircleMembers.$inferSelect;
 
 export type InsertFaithCirclePost = z.infer<typeof insertFaithCirclePostSchema>;
 export type FaithCirclePost = typeof faithCirclePosts.$inferSelect;
+
+export type InsertFinancialTransaction = z.infer<typeof insertFinancialTransactionSchema>;
+export type FinancialTransaction = typeof financialTransactions.$inferSelect;
+
+export type InsertGenerosityCommitment = z.infer<typeof insertGenerosityCommitmentSchema>;
+export type GenerosityCommitment = typeof generosityCommitments.$inferSelect;
+
+export type InsertFinancialGoal = z.infer<typeof insertFinancialGoalSchema>;
+export type FinancialGoal = typeof financialGoals.$inferSelect;
+
+export type InsertStewardshipReflection = z.infer<typeof insertStewardshipReflectionSchema>;
+export type StewardshipReflection = typeof stewardshipReflections.$inferSelect;
+
+export type InsertBudgetCategory = z.infer<typeof insertBudgetCategorySchema>;
+export type BudgetCategory = typeof budgetCategories.$inferSelect;
