@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { X, ChevronLeft } from 'lucide-react';
 import DesktopBackground from './DesktopBackground';
 import TopMenuBar from './TopMenuBar';
 import DesktopDock, { apps } from './DesktopDock';
@@ -9,6 +10,7 @@ import Window from './Window';
 import Launchpad from './Launchpad';
 import RightSidebar from './RightSidebar';
 import FlourishingWidget from './FlourishingWidget';
+import { Button } from '@/components/ui/button';
 
 import BibleWindow from './apps/BibleWindow';
 import DevotionalWindow from './apps/DevotionalWindow';
@@ -49,6 +51,8 @@ export default function Desktop() {
   const [openWindows, setOpenWindows] = useState<string[]>([]);
   const [launchedApps, setLaunchedApps] = useState<string[]>([]);
   const [isLaunchpadOpen, setIsLaunchpadOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isWidgetVisible, setIsWidgetVisible] = useState(true);
 
   // Check if flourishing data exists for widget
   const { data: flourishingData } = useQuery<{ data: any | null }>({
@@ -86,9 +90,11 @@ export default function Desktop() {
 
       <main className="relative h-screen w-screen pt-14 pb-24 overflow-hidden">
         {viewMode === 'icons' ? (
-          <div className="flex h-full gap-4">
+          <div className="flex h-full relative">
             {/* Left side: Desktop Icons */}
-            <div className="flex-1 p-4 grid grid-flow-col auto-cols-max gap-x-4 gap-y-1 grid-rows-5">
+            <div className={`flex-1 p-4 grid grid-flow-col auto-cols-max gap-x-4 gap-y-1 grid-rows-5 transition-all duration-300 ${
+              isSidebarOpen ? 'mr-80' : 'mr-0'
+            }`}>
               {apps.map(app => (
                 <DesktopIcon
                   key={app.id}
@@ -101,17 +107,37 @@ export default function Desktop() {
             
             {/* Middle: Flourishing Widget (only if data exists) */}
             {flourishingData?.data && (
-              <div className="flex items-center justify-center px-4" data-testid="flourishing-widget-container">
-                <div className="w-64">
-                  <FlourishingWidget />
-                </div>
-              </div>
+              <>
+                {isWidgetVisible ? (
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10" data-testid="flourishing-widget-container">
+                    <div className="relative">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 z-10"
+                        onClick={() => setIsWidgetVisible(false)}
+                        data-testid="button-close-widget"
+                        aria-label="Close flourishing widget"
+                        title="Close flourishing widget"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                      <FlourishingWidget />
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setIsWidgetVisible(true)}
+                    className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg shadow-lg transition-all z-10 text-sm font-medium"
+                    data-testid="button-show-widget"
+                    aria-label="Show flourishing widget"
+                    title="Show flourishing widget"
+                  >
+                    Show Flourishing Widget
+                  </button>
+                )}
+              </>
             )}
-            
-            {/* Right side: Sidebar Widgets */}
-            <div className="border-l border-amber-200/30 dark:border-amber-800/30 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm">
-              <RightSidebar />
-            </div>
           </div>
         ) : (
           <TileView onAppClick={handleAppClick} />
@@ -137,6 +163,43 @@ export default function Desktop() {
           );
         })}
       </main>
+
+      {/* Right Sidebar - Outside main to avoid bottom padding */}
+      {viewMode === 'icons' && (
+        <div 
+          className={`fixed top-14 right-0 bottom-0 w-80 border-l border-amber-200/30 dark:border-amber-800/30 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm transition-transform duration-300 ease-in-out z-20 ${
+            isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          <div className="relative h-full">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="absolute top-2 left-2 h-6 w-6 z-10"
+              onClick={() => setIsSidebarOpen(false)}
+              data-testid="button-close-sidebar"
+              aria-label="Close sidebar"
+              title="Close sidebar"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+            <RightSidebar />
+          </div>
+        </div>
+      )}
+
+      {/* Floating Reopen Button - Outside main */}
+      {viewMode === 'icons' && !isSidebarOpen && (
+        <button
+          onClick={() => setIsSidebarOpen(true)}
+          className="fixed top-1/2 right-0 -translate-y-1/2 bg-amber-500 hover:bg-amber-600 text-white p-3 rounded-l-lg shadow-lg transition-all z-30"
+          data-testid="button-open-sidebar"
+          aria-label="Open sidebar"
+          title="Open sidebar"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+      )}
 
       <DesktopDock 
         onAppClick={handleAppClick}
