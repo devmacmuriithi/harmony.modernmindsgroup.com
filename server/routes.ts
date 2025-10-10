@@ -6,7 +6,11 @@ import {
   spiritualGuides, conversations, messages, prayerChains, prayerChainComments,
   videos, songs, sermons, resources, flourishingScores,
   faithCircles, faithCircleMembers, faithCirclePosts,
-  insertFaithCircleSchema, insertFaithCirclePostSchema
+  financialTransactions, generosityCommitments, financialGoals, 
+  stewardshipReflections, budgetCategories,
+  insertFaithCircleSchema, insertFaithCirclePostSchema,
+  insertFinancialTransactionSchema, insertGenerosityCommitmentSchema,
+  insertFinancialGoalSchema, insertStewardshipReflectionSchema, insertBudgetCategorySchema
 } from '@shared/schema';
 import { eq, desc, and, or, ilike, sql } from 'drizzle-orm';
 import './auth'; // Import session type declarations
@@ -1163,6 +1167,278 @@ Return the verse in the requested translation. If no translation specified, use 
     } catch (error) {
       console.error('Create post error:', error);
       res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to create post' } });
+    }
+  });
+
+  // ============ FINANCIAL STEWARDSHIP ============
+  
+  // Get financial dashboard summary
+  app.get('/api/financial/dashboard', requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Get recent transactions
+      const recentTransactions = await db.select()
+        .from(financialTransactions)
+        .where(eq(financialTransactions.userId, userId))
+        .orderBy(desc(financialTransactions.createdAt))
+        .limit(10);
+      
+      // Get active commitments
+      const activeCommitments = await db.select()
+        .from(generosityCommitments)
+        .where(and(
+          eq(generosityCommitments.userId, userId),
+          eq(generosityCommitments.status, 'active')
+        ))
+        .orderBy(desc(generosityCommitments.createdAt));
+      
+      // Get active goals
+      const activeGoals = await db.select()
+        .from(financialGoals)
+        .where(and(
+          eq(financialGoals.userId, userId),
+          eq(financialGoals.isCompleted, false)
+        ))
+        .orderBy(desc(financialGoals.createdAt));
+      
+      // Get budget categories
+      const budget = await db.select()
+        .from(budgetCategories)
+        .where(eq(budgetCategories.userId, userId));
+      
+      res.json({ 
+        success: true, 
+        data: { 
+          recentTransactions, 
+          activeCommitments, 
+          activeGoals,
+          budget
+        } 
+      });
+    } catch (error) {
+      console.error('Financial dashboard error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to fetch dashboard' } });
+    }
+  });
+  
+  // Get all transactions
+  app.get('/api/financial/transactions', requireAuth, async (req, res) => {
+    try {
+      const transactions = await db.select()
+        .from(financialTransactions)
+        .where(eq(financialTransactions.userId, req.user!.id))
+        .orderBy(desc(financialTransactions.createdAt));
+      
+      res.json({ success: true, data: transactions });
+    } catch (error) {
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to fetch transactions' } });
+    }
+  });
+  
+  // Create transaction (tithe, generosity, debt payment, etc.)
+  app.post('/api/financial/transactions', requireAuth, async (req, res) => {
+    try {
+      const validatedData = insertFinancialTransactionSchema.parse({
+        ...req.body,
+        userId: req.user!.id
+      });
+      
+      const transaction = await db.insert(financialTransactions)
+        .values(validatedData)
+        .returning();
+      
+      // Create event for personalization
+      await createEvent(req.user!.id, req.body.transactionType as any, {
+        amount: req.body.amount,
+        category: req.body.category,
+        spiritual_tag: req.body.spiritualTag
+      });
+      
+      res.json({ success: true, data: transaction[0] });
+    } catch (error) {
+      console.error('Transaction creation error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to create transaction' } });
+    }
+  });
+  
+  // Get generosity commitments
+  app.get('/api/financial/commitments', requireAuth, async (req, res) => {
+    try {
+      const commitments = await db.select()
+        .from(generosityCommitments)
+        .where(eq(generosityCommitments.userId, req.user!.id))
+        .orderBy(desc(generosityCommitments.createdAt));
+      
+      res.json({ success: true, data: commitments });
+    } catch (error) {
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to fetch commitments' } });
+    }
+  });
+  
+  // Create generosity commitment
+  app.post('/api/financial/commitments', requireAuth, async (req, res) => {
+    try {
+      const validatedData = insertGenerosityCommitmentSchema.parse({
+        ...req.body,
+        userId: req.user!.id
+      });
+      
+      const commitment = await db.insert(generosityCommitments)
+        .values(validatedData)
+        .returning();
+      
+      await createEvent(req.user!.id, 'generosity_commitment', {
+        title: req.body.title,
+        target_amount: req.body.targetAmount
+      });
+      
+      res.json({ success: true, data: commitment[0] });
+    } catch (error) {
+      console.error('Commitment creation error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to create commitment' } });
+    }
+  });
+  
+  // Update generosity commitment
+  app.patch('/api/financial/commitments/:id', requireAuth, async (req, res) => {
+    try {
+      const updated = await db.update(generosityCommitments)
+        .set(req.body)
+        .where(and(
+          eq(generosityCommitments.id, req.params.id),
+          eq(generosityCommitments.userId, req.user!.id)
+        ))
+        .returning();
+      
+      res.json({ success: true, data: updated[0] });
+    } catch (error) {
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to update commitment' } });
+    }
+  });
+  
+  // Get financial goals
+  app.get('/api/financial/goals', requireAuth, async (req, res) => {
+    try {
+      const goals = await db.select()
+        .from(financialGoals)
+        .where(eq(financialGoals.userId, req.user!.id))
+        .orderBy(desc(financialGoals.createdAt));
+      
+      res.json({ success: true, data: goals });
+    } catch (error) {
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to fetch goals' } });
+    }
+  });
+  
+  // Create financial goal
+  app.post('/api/financial/goals', requireAuth, async (req, res) => {
+    try {
+      const validatedData = insertFinancialGoalSchema.parse({
+        ...req.body,
+        userId: req.user!.id
+      });
+      
+      const goal = await db.insert(financialGoals)
+        .values(validatedData)
+        .returning();
+      
+      await createEvent(req.user!.id, 'financial_goal_set', {
+        title: req.body.title,
+        goal_type: req.body.goalType
+      });
+      
+      res.json({ success: true, data: goal[0] });
+    } catch (error) {
+      console.error('Goal creation error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to create goal' } });
+    }
+  });
+  
+  // Update financial goal progress
+  app.patch('/api/financial/goals/:id', requireAuth, async (req, res) => {
+    try {
+      const updated = await db.update(financialGoals)
+        .set(req.body)
+        .where(and(
+          eq(financialGoals.id, req.params.id),
+          eq(financialGoals.userId, req.user!.id)
+        ))
+        .returning();
+      
+      res.json({ success: true, data: updated[0] });
+    } catch (error) {
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to update goal' } });
+    }
+  });
+  
+  // Get stewardship reflections
+  app.get('/api/financial/reflections', requireAuth, async (req, res) => {
+    try {
+      const reflections = await db.select()
+        .from(stewardshipReflections)
+        .where(eq(stewardshipReflections.userId, req.user!.id))
+        .orderBy(desc(stewardshipReflections.createdAt));
+      
+      res.json({ success: true, data: reflections });
+    } catch (error) {
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to fetch reflections' } });
+    }
+  });
+  
+  // Create stewardship reflection
+  app.post('/api/financial/reflections', requireAuth, async (req, res) => {
+    try {
+      const validatedData = insertStewardshipReflectionSchema.parse({
+        ...req.body,
+        userId: req.user!.id
+      });
+      
+      const reflection = await db.insert(stewardshipReflections)
+        .values(validatedData)
+        .returning();
+      
+      await createEvent(req.user!.id, 'stewardship_reflection', {
+        reflection_type: req.body.reflectionType,
+        content: req.body.content
+      });
+      
+      res.json({ success: true, data: reflection[0] });
+    } catch (error) {
+      console.error('Reflection creation error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to create reflection' } });
+    }
+  });
+  
+  // Get budget categories
+  app.get('/api/financial/budget', requireAuth, async (req, res) => {
+    try {
+      const budget = await db.select()
+        .from(budgetCategories)
+        .where(eq(budgetCategories.userId, req.user!.id));
+      
+      res.json({ success: true, data: budget });
+    } catch (error) {
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to fetch budget' } });
+    }
+  });
+  
+  // Create budget category
+  app.post('/api/financial/budget', requireAuth, async (req, res) => {
+    try {
+      const validatedData = insertBudgetCategorySchema.parse({
+        ...req.body,
+        userId: req.user!.id
+      });
+      
+      const category = await db.insert(budgetCategories)
+        .values(validatedData)
+        .returning();
+      
+      res.json({ success: true, data: category[0] });
+    } catch (error) {
+      console.error('Budget category creation error:', error);
+      res.status(500).json({ success: false, error: { code: 'DATABASE_ERROR', message: 'Failed to create budget category' } });
     }
   });
 
