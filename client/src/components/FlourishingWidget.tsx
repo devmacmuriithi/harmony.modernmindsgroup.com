@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, GripVertical, Heart, Cross, Smile } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 
 interface FlourishingScore {
   id: string;
@@ -54,6 +55,12 @@ export default function FlourishingWidget() {
     queryKey: ['/api/flourishing']
   });
 
+  // Dragging state
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const widgetRef = useRef<HTMLDivElement>(null);
+
   const score = scoreData?.data;
 
   if (!score) {
@@ -62,59 +69,97 @@ export default function FlourishingWidget() {
 
   const overallColor = getScoreColor(score.overallIndex || 0);
 
-  const miniScores = [
-    { key: 'healthScore', label: 'Health' },
-    { key: 'faithScore', label: 'Faith' },
-    { key: 'happinessScore', label: 'Happy' },
-  ];
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Only drag if clicking on the drag handle area (top section)
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-drag-handle]')) {
+      setIsDragging(true);
+      dragStartRef.current = {
+        x: e.clientX - position.x,
+        y: e.clientY - position.y,
+      };
+    }
+  };
+
+  // Effect to handle global mouse events during dragging
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      setPosition({
+        x: e.clientX - dragStartRef.current.x,
+        y: e.clientY - dragStartRef.current.y,
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, position.x, position.y]);
 
   return (
-    <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm border border-amber-200 dark:border-amber-800 rounded-lg p-4 shadow-sm">
-      <div className="flex items-center gap-3 mb-3">
-        <div className={`p-2 rounded-full bg-gradient-to-br ${overallColor.gradient} ring-4 ${overallColor.ring}`}>
-          <TrendingUp className="h-4 w-4 text-white" />
+    <div 
+      ref={widgetRef}
+      className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm border border-amber-200 dark:border-amber-800 rounded-lg shadow-lg"
+      style={{
+        transform: `translate(${position.x}px, ${position.y}px)`,
+        width: '200px',
+        userSelect: isDragging ? 'none' : 'auto',
+        cursor: isDragging ? 'grabbing' : 'auto'
+      }}
+      onMouseDown={handleMouseDown}
+      data-testid="draggable-widget"
+    >
+      {/* Drag Handle Header */}
+      <div 
+        className="flex items-center gap-2 px-3 py-2 border-b border-amber-200 dark:border-amber-800 cursor-grab active:cursor-grabbing"
+        data-drag-handle="true"
+      >
+        <GripVertical className="h-3 w-3 text-muted-foreground" />
+        <div className={`p-1.5 rounded-full bg-gradient-to-br ${overallColor.gradient} ring-2 ${overallColor.ring}`}>
+          <TrendingUp className="h-3 w-3 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-xs font-medium text-muted-foreground">Flourishing Index</h3>
-          <div className="flex items-baseline gap-2">
-            <span className={`text-2xl font-bold ${overallColor.text}`} data-testid="widget-overall-score">
+          <div className="flex items-baseline gap-1.5">
+            <span className={`text-xl font-bold ${overallColor.text}`} data-testid="widget-overall-score">
               {score.overallIndex}
             </span>
-            <span className={`text-xs font-medium ${overallColor.text}`}>
-              {overallColor.label}
-            </span>
+            <span className="text-[10px] font-medium text-muted-foreground">FI</span>
           </div>
         </div>
       </div>
 
-      <div className="space-y-2">
-        {miniScores.map(({ key, label }) => {
+      {/* Compact Scores */}
+      <div className="p-2 space-y-1.5">
+        {[
+          { key: 'healthScore', icon: Heart, color: 'text-red-500' },
+          { key: 'faithScore', icon: Cross, color: 'text-amber-600' },
+          { key: 'happinessScore', icon: Smile, color: 'text-yellow-500' },
+        ].map(({ key, icon: Icon, color }) => {
           const scoreValue = score[key as keyof FlourishingScore] as number;
           const scoreColor = getScoreColor(scoreValue);
           return (
-            <div key={key} className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">{label}</span>
-              <div className="flex items-center gap-2">
-                <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full bg-gradient-to-r ${scoreColor.gradient}`}
-                    style={{ width: `${scoreValue}%` }}
-                  />
-                </div>
-                <span className="text-foreground font-medium w-6 text-right">{scoreValue}</span>
+            <div key={key} className="flex items-center gap-2">
+              <Icon className={`h-3 w-3 ${color}`} />
+              <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className={`h-full bg-gradient-to-r ${scoreColor.gradient}`}
+                  style={{ width: `${scoreValue}%` }}
+                />
               </div>
+              <span className="text-[10px] font-medium text-foreground w-5 text-right">{scoreValue}</span>
             </div>
           );
         })}
       </div>
-
-      {score.aiInsight && (
-        <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-800">
-          <p className="text-xs text-muted-foreground line-clamp-2" data-testid="widget-ai-insight">
-            💡 {score.aiInsight}
-          </p>
-        </div>
-      )}
     </div>
   );
 }

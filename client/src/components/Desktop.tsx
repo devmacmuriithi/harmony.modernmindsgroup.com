@@ -109,7 +109,7 @@ export default function Desktop() {
             {flourishingData?.data && (
               <>
                 {isWidgetVisible ? (
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10" data-testid="flourishing-widget-container">
+                  <div className="absolute left-8 top-8 z-10" data-testid="flourishing-widget-container">
                     <div className="relative">
                       <Button
                         size="icon"
