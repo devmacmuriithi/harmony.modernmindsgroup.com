@@ -67,6 +67,11 @@ Preferred communication style: Simple, everyday language.
 
 **Event Data Captured**: Full content for prayers, notes, moods; metadata for media interactions; community engagement details for circles
 
+**Activity Analysis**: AI analyzes last 50 user activities with recency-weighted prioritization:
+- **[RECENT]** (last 10 activities): Weighted HEAVILY - reflects current spiritual state
+- **[MODERATE]** (activities 11-25): Important for identifying trends
+- **[OLDER]** (activities 26-50): Background context only
+
 **Performance**: Non-blocking architecture using fire-and-forget promises - API responses return immediately while personalization runs in background. Uses `Promise.allSettled` for parallel engine execution.
 
 ### UI Component Libraries

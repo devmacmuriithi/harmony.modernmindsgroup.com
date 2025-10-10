@@ -38,17 +38,19 @@ function safeJsonParse<T>(jsonString: string, context: string): T {
   }
 }
 
-// Get events summary for AI
+// Get events summary for AI with recency weighting
 async function getEventsSummary(userId: string): Promise<string> {
   const recentEvents = await db.select()
     .from(events)
     .where(eq(events.userId, userId))
     .orderBy(desc(events.createdAt))
-    .limit(20);
+    .limit(50);
 
-  return recentEvents.map(e => 
-    `${e.eventType}: ${JSON.stringify(e.eventData)}`
-  ).join('\n');
+  // Format with recency indicators (most recent first)
+  return recentEvents.map((e, index) => {
+    const recencyLabel = index < 10 ? '[RECENT]' : index < 25 ? '[MODERATE]' : '[OLDER]';
+    return `${recencyLabel} ${e.eventType}: ${JSON.stringify(e.eventData)}`;
+  }).join('\n');
 }
 
 // Bible Verse Engine
@@ -58,7 +60,7 @@ export async function runBibleVerseEngine(userId: string) {
   const run = await db.insert(personalizationRuns).values({
     userId,
     engineType: 'bible_verse',
-    inputData: { events_count: 20 },
+    inputData: { events_count: 50 },
     status: 'pending'
   }).returning();
   
@@ -79,7 +81,14 @@ CRITICAL RULES:
   "reason": "Brief explanation of why this verse fits their journey"
 }
 
-User's recent activities:
+3. PRIORITIZATION: Activities are labeled by recency:
+   - [RECENT] = Most important (last 10 activities)
+   - [MODERATE] = Important (activities 11-25)
+   - [OLDER] = Context (activities 26-50)
+   
+   Weight [RECENT] activities HEAVILY in your recommendation.
+
+User's recent activities (50 total, most recent first):
 ${eventsSummary}
 
 Respond with JSON only.`;
@@ -157,7 +166,7 @@ export async function runDevotionalEngine(userId: string) {
   const run = await db.insert(personalizationRuns).values({
     userId,
     engineType: 'devotional',
-    inputData: { events_count: 20 },
+    inputData: { events_count: 50 },
     status: 'pending'
   }).returning();
   
@@ -177,7 +186,14 @@ CRITICAL RULES:
 
 3. IMPORTANT: Choose a scripture reference that matches the devotional theme and user's spiritual journey. Examples: "Romans 8:28", "Philippians 4:6-7", "Psalm 23:1", etc.
 
-User's recent activities:
+4. PRIORITIZATION: Activities are labeled by recency:
+   - [RECENT] = Most important (last 10 activities)
+   - [MODERATE] = Important (activities 11-25)
+   - [OLDER] = Context (activities 26-50)
+   
+   Focus PRIMARILY on [RECENT] activities when creating the devotional.
+
+User's recent activities (50 total, most recent first):
 ${eventsSummary}
 
 Respond with JSON only.`;
@@ -222,7 +238,7 @@ export async function runVideoEngine(userId: string) {
   const run = await db.insert(personalizationRuns).values({
     userId,
     engineType: 'video',
-    inputData: { events_count: 20 },
+    inputData: { events_count: 50 },
     status: 'pending'
   }).returning();
   
@@ -251,7 +267,14 @@ IMPORTANT:
 - Thumbnail URL format: https://img.youtube.com/vi/{VIDEO_ID}/maxresdefault.jpg
 - Only recommend videos you are confident exist on YouTube
 
-User's recent activities:
+3. PRIORITIZATION: Activities are labeled by recency:
+   - [RECENT] = Most important (last 10 activities)
+   - [MODERATE] = Important (activities 11-25)
+   - [OLDER] = Context (activities 26-50)
+   
+   Match videos PRIMARILY to [RECENT] activities and current spiritual state.
+
+User's recent activities (50 total, most recent first):
 ${eventsSummary}
 
 Recommend videos about sermons, teachings, worship, testimonies, or Christian living. Respond with JSON only.`;
@@ -303,7 +326,7 @@ export async function runSongEngine(userId: string) {
   const run = await db.insert(personalizationRuns).values({
     userId,
     engineType: 'song',
-    inputData: { events_count: 20 },
+    inputData: { events_count: 50 },
     status: 'pending'
   }).returning();
   
@@ -325,7 +348,14 @@ CRITICAL RULES:
   }
 ]
 
-User's recent activities:
+3. PRIORITIZATION: Activities are labeled by recency:
+   - [RECENT] = Most important (last 10 activities)
+   - [MODERATE] = Important (activities 11-25)
+   - [OLDER] = Context (activities 26-50)
+   
+   Choose songs that match the user's CURRENT mood/state from [RECENT] activities.
+
+User's recent activities (50 total, most recent first):
 ${eventsSummary}
 
 Respond with JSON only.`;
@@ -376,7 +406,7 @@ export async function runSermonEngine(userId: string) {
   const run = await db.insert(personalizationRuns).values({
     userId,
     engineType: 'sermon',
-    inputData: { events_count: 20 },
+    inputData: { events_count: 50 },
     status: 'pending'
   }).returning();
   
@@ -399,7 +429,14 @@ CRITICAL RULES:
   }
 ]
 
-User's recent activities:
+3. PRIORITIZATION: Activities are labeled by recency:
+   - [RECENT] = Most important (last 10 activities)
+   - [MODERATE] = Important (activities 11-25)
+   - [OLDER] = Context (activities 26-50)
+   
+   Address the user's CURRENT spiritual needs from [RECENT] activities.
+
+User's recent activities (50 total, most recent first):
 ${eventsSummary}
 
 Generate AI-powered sermon recommendations that will encourage spiritual growth. Respond with JSON only.`;
@@ -451,7 +488,7 @@ export async function runResourceEngine(userId: string) {
   const run = await db.insert(personalizationRuns).values({
     userId,
     engineType: 'resource',
-    inputData: { events_count: 20 },
+    inputData: { events_count: 50 },
     status: 'pending'
   }).returning();
   
@@ -476,7 +513,14 @@ CRITICAL RULES:
 
 Resource types: article, blog, website, pdf, book, podcast, study
 
-User's recent activities:
+3. PRIORITIZATION: Activities are labeled by recency:
+   - [RECENT] = Most important (last 10 activities)
+   - [MODERATE] = Important (activities 11-25)
+   - [OLDER] = Context (activities 26-50)
+   
+   Recommend resources that address topics from [RECENT] activities first.
+
+User's recent activities (50 total, most recent first):
 ${eventsSummary}
 
 Provide diverse resource types. Include reputable Christian publishers, ministries, and authors. Ensure URLs are real and accessible. Respond with JSON only.`;
@@ -528,7 +572,7 @@ export async function runFlourishingEngine(userId: string) {
   const run = await db.insert(personalizationRuns).values({
     userId,
     engineType: 'flourishing',
-    inputData: { events_count: 20 },
+    inputData: { events_count: 50 },
     status: 'pending'
   }).returning();
   
@@ -565,7 +609,14 @@ AI Insight guidelines:
 - NEVER suggest apps not in the list above
 - Keep it under 120 characters for tile display
 
-User's recent activities:
+3. PRIORITIZATION: Activities are labeled by recency:
+   - [RECENT] = Most important (last 10 activities) - WEIGHT HEAVILY in scoring
+   - [MODERATE] = Important (activities 11-25) - Consider for trends
+   - [OLDER] = Context (activities 26-50) - Background only
+   
+   Score based PRIMARILY on [RECENT] activities to reflect current state.
+
+User's recent activities (50 total, most recent first):
 ${eventsSummary}
 
 Respond with JSON only.`;
