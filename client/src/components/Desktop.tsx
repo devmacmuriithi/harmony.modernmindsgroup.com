@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import DesktopBackground from './DesktopBackground';
 import TopMenuBar from './TopMenuBar';
 import DesktopDock, { apps } from './DesktopDock';
@@ -7,6 +8,7 @@ import TileView from './TileView';
 import Window from './Window';
 import Launchpad from './Launchpad';
 import RightSidebar from './RightSidebar';
+import FlourishingWidget from './FlourishingWidget';
 
 import BibleWindow from './apps/BibleWindow';
 import DevotionalWindow from './apps/DevotionalWindow';
@@ -48,6 +50,11 @@ export default function Desktop() {
   const [launchedApps, setLaunchedApps] = useState<string[]>([]);
   const [isLaunchpadOpen, setIsLaunchpadOpen] = useState(false);
 
+  // Check if flourishing data exists for widget
+  const { data: flourishingData } = useQuery<{ data: any | null }>({
+    queryKey: ['/api/flourishing']
+  });
+
   const handleAppClick = (appId: string) => {
     // Track launched apps
     if (!launchedApps.includes(appId)) {
@@ -79,7 +86,7 @@ export default function Desktop() {
 
       <main className="relative h-screen w-screen pt-14 pb-24 overflow-hidden">
         {viewMode === 'icons' ? (
-          <div className="flex h-full">
+          <div className="flex h-full gap-4">
             {/* Left side: Desktop Icons */}
             <div className="flex-1 p-4 grid grid-flow-col auto-cols-max gap-x-4 gap-y-1 grid-rows-5">
               {apps.map(app => (
@@ -91,6 +98,15 @@ export default function Desktop() {
                 />
               ))}
             </div>
+            
+            {/* Middle: Flourishing Widget (only if data exists) */}
+            {flourishingData?.data && (
+              <div className="flex items-center justify-center px-4" data-testid="flourishing-widget-container">
+                <div className="w-64">
+                  <FlourishingWidget />
+                </div>
+              </div>
+            )}
             
             {/* Right side: Sidebar Widgets */}
             <div className="border-l border-amber-200/30 dark:border-amber-800/30 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm">

@@ -7,10 +7,10 @@ import { useToast } from '@/hooks/use-toast';
 interface FlourishingScore {
   id: string;
   userId: string;
-  overallScore: number;
+  overallIndex: number;
   healthScore: number;
-  relationshipScore: number;
-  financeScore: number;
+  relationshipsScore: number;
+  financesScore: number;
   meaningScore: number;
   happinessScore: number;
   characterScore: number;
@@ -20,14 +20,43 @@ interface FlourishingScore {
 }
 
 const domainColors = [
-  { domain: 'Health', key: 'healthScore', color: 'from-green-500 to-emerald-600' },
-  { domain: 'Relationships', key: 'relationshipScore', color: 'from-blue-500 to-cyan-600' },
-  { domain: 'Finances', key: 'financeScore', color: 'from-yellow-500 to-orange-600' },
-  { domain: 'Meaning', key: 'meaningScore', color: 'from-purple-500 to-violet-600' },
-  { domain: 'Happiness', key: 'happinessScore', color: 'from-pink-500 to-rose-600' },
-  { domain: 'Character', key: 'characterScore', color: 'from-indigo-500 to-blue-600' },
-  { domain: 'Faith', key: 'faithScore', color: 'from-amber-500 to-yellow-600' },
+  { domain: 'Health', key: 'healthScore' },
+  { domain: 'Relationships', key: 'relationshipsScore' },
+  { domain: 'Finances', key: 'financesScore' },
+  { domain: 'Meaning', key: 'meaningScore' },
+  { domain: 'Happiness', key: 'happinessScore' },
+  { domain: 'Character', key: 'characterScore' },
+  { domain: 'Faith', key: 'faithScore' },
 ];
+
+// Get color based on score range
+const getScoreColor = (score: number): { gradient: string; text: string; label: string } => {
+  if (score >= 80) {
+    return { 
+      gradient: 'from-emerald-500 to-green-600', 
+      text: 'text-emerald-600 dark:text-emerald-400',
+      label: 'Thriving 🌟' 
+    };
+  } else if (score >= 60) {
+    return { 
+      gradient: 'from-blue-500 to-cyan-600', 
+      text: 'text-blue-600 dark:text-blue-400',
+      label: 'Stable ✅' 
+    };
+  } else if (score >= 40) {
+    return { 
+      gradient: 'from-amber-500 to-orange-600', 
+      text: 'text-amber-600 dark:text-amber-400',
+      label: 'Struggling ⚠️' 
+    };
+  } else {
+    return { 
+      gradient: 'from-red-500 to-rose-600', 
+      text: 'text-red-600 dark:text-red-400',
+      label: 'Crisis 🆘' 
+    };
+  }
+};
 
 export default function FlourishingWindow() {
   const { toast } = useToast();
@@ -88,19 +117,24 @@ export default function FlourishingWindow() {
     );
   }
 
-  const scores = domainColors.map(({ domain, key, color }) => ({
-    domain,
-    score: score[key as keyof FlourishingScore] as number,
-    color
-  }));
+  const overallColor = getScoreColor(score.overallIndex || 0);
+  
+  const scores = domainColors.map(({ domain, key }) => {
+    const scoreValue = score[key as keyof FlourishingScore] as number;
+    return {
+      domain,
+      score: scoreValue,
+      ...getScoreColor(scoreValue)
+    };
+  });
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="text-center flex-1">
           <h2 className="text-xl font-semibold text-foreground mb-2">Flourishing Index</h2>
-          <div className="text-5xl font-bold text-sidebar-primary mb-1" data-testid="text-overall-score">{score.overallScore}</div>
-          <p className="text-sm text-muted-foreground">Overall Wellbeing Score</p>
+          <div className={`text-5xl font-bold ${overallColor.text} mb-1`} data-testid="text-overall-score">{score.overallIndex}</div>
+          <p className={`text-sm font-medium ${overallColor.text}`}>{overallColor.label}</p>
         </div>
         <Button
           size="icon"
@@ -126,7 +160,7 @@ export default function FlourishingWindow() {
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
               <div 
-                className={`h-full bg-gradient-to-r ${scoreItem.color}`}
+                className={`h-full bg-gradient-to-r ${scoreItem.gradient}`}
                 style={{ width: `${scoreItem.score}%` }}
               />
             </div>
