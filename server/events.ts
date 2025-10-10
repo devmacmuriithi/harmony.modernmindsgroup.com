@@ -13,7 +13,15 @@ export type EventType =
   | 'song_listened' 
   | 'resource_read'
   | 'circle_joined'
-  | 'circle_post';
+  | 'circle_post'
+  | 'tithe'
+  | 'generosity'
+  | 'debt_payment'
+  | 'income'
+  | 'expense'
+  | 'generosity_commitment'
+  | 'financial_goal_set'
+  | 'stewardship_reflection';
 
 // Track pending flourishing calculations per user to avoid duplicate calls
 const pendingCalculations = new Map<string, NodeJS.Timeout>();
@@ -51,13 +59,16 @@ async function autoGeneratePersonalizations(userId: string, eventType: EventType
     } = await import('./personalization');
 
     // Events that trigger spiritual content personalization
-    const spiritualEvents: EventType[] = ['mood', 'prayer', 'note_created', 'guide_chat'];
+    const spiritualEvents: EventType[] = ['mood', 'prayer', 'note_created', 'guide_chat', 'tithe', 'generosity', 'debt_payment', 'stewardship_reflection'];
     
     // Events that refine existing recommendations
     const engagementEvents: EventType[] = ['video_watched', 'song_listened', 'resource_read', 'bible_verse_saved'];
     
     // Community events trigger broader personalization
     const communityEvents: EventType[] = ['circle_joined', 'circle_post'];
+    
+    // Financial tracking events (update flourishing but don't trigger all personalizations)
+    const financialTrackingEvents: EventType[] = ['income', 'expense', 'generosity_commitment', 'financial_goal_set'];
 
     if (spiritualEvents.includes(eventType)) {
       // Generate ALL personalized content for spiritual events
